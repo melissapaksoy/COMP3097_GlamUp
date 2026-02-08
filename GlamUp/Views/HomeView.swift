@@ -1,38 +1,144 @@
 import SwiftUI
+import MapKit
 
 struct HomeView: View {
+    @State private var searchText: String = ""
+    @State private var cameraPosition: MapCameraPosition = .region(
+        MKCoordinateRegion(
+            center: CLLocationCoordinate2D(latitude: 43.6532, longitude: -79.3832),
+            span: MKCoordinateSpan(latitudeDelta: 0.2, longitudeDelta: 0.2)
+        )
+    )
+    
+    private let professionals: [(name: String, role: String, rating: Double, priceFrom: String)] = [
+        ("Maria Rodriguez", "Nail Artist", 4.8, "$45"),
+        ("Alex Morgan", "Hair Stylist", 4.9, "$60"),
+        ("Sophia Martinez", "Makeup Artist", 4.7, "$50"),
+        ("Daniel Kim", "Barber", 4.6, "$35"),
+        ("Emily Chen", "Esthetician", 4.8, "$55")
+    ]
+    
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 16) {
-
-                    // Title
-                    Text("Beauty Professionals")
-                        .font(.title)
-                        .fontWeight(.bold)
-                        .padding(.top)
-
-                    // Professional Card → Profile
-                    NavigationLink {
-                        BeautyProfileView(
-                            proName: "Maria Rodriguez",
-                            proRole: "Nail Artist"
-                        )
+            VStack(spacing: 0) {
+                // Top bar with Back button (mirrors btnBack)
+                HStack {
+                    Button {
+                        // In a root view, we can't dismiss; this is a placeholder.
                     } label: {
-                        ProCardRow(
-                            name: "Maria Rodriguez",
-                            role: "Nail Artist",
-                            rating: 4.8,
-                            priceFrom: "$45"
-                        )
+                        Image(systemName: "chevron.left")
+                            .font(.headline)
+                            .padding(10)
+                            .background(Color(.systemGray6))
+                            .clipShape(Capsule())
                     }
-                    .buttonStyle(.plain)
-
+                    Spacer()
                 }
-                .padding()
+                .padding([.top, .horizontal])
+
+                ScrollView {
+                    VStack(spacing: 16) {
+
+                        // Title
+                        Text("Explore")
+                            .font(.title)
+                            .fontWeight(.bold)
+                            .padding(.top)
+
+                        // Dummy search bar
+                        HStack(spacing: 8) {
+                            Image(systemName: "magnifyingglass")
+                                .foregroundStyle(.secondary)
+                            TextField("Search professionals, services...", text: $searchText)
+                                .textInputAutocapitalization(.never)
+                                .disableAutocorrection(true)
+                        }
+                        .padding(12)
+                        .background(Color(.systemGray6))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .padding(.horizontal)
+
+                        // Filter chips row (Price, Availability, Service, Rating)
+                        FiltersRow()
+
+                        // Map preview under filters
+                        Map(position: $cameraPosition)
+                            .mapStyle(.standard)
+                            .frame(height: 180)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .padding(.horizontal)
+
+                        // Professional Cards → Profile
+                        ForEach(Array(professionals.enumerated()), id: \.offset) { _, pro in
+                            NavigationLink {
+                                BeautyProfileView(
+                                    proName: pro.name,
+                                    proRole: pro.role
+                                )
+                            } label: {
+                                ProCardRow(
+                                    name: pro.name,
+                                    role: pro.role,
+                                    rating: pro.rating,
+                                    priceFrom: pro.priceFrom
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding()
+                }
             }
-            .navigationTitle("Home")
+            .navigationTitle("")
+            .navigationBarHidden(true)
         }
+    }
+}
+
+// MARK: - Filters Row
+private struct FiltersRow: View {
+    @State private var showAlert: Bool = false
+    @State private var alertMessage: String = ""
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                FilterChip(title: "Price") { toast("Sort: Price") }
+                FilterChip(title: "Availability") { toast("Filter: Availability") }
+                FilterChip(title: "Service") { toast("Filter: Service") }
+                FilterChip(title: "Rating") { toast("Filter: Rating") }
+            }
+            .padding(.horizontal)
+        }
+        .alert(alertMessage, isPresented: $showAlert) {
+            Button("OK", role: .cancel) { }
+        }
+    }
+
+    private func toast(_ message: String) {
+        alertMessage = message
+        showAlert = true
+    }
+}
+
+private struct FilterChip: View {
+    let title: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: "line.3.horizontal.decrease.circle")
+                Text(title)
+                    .font(.subheadline).bold()
+            }
+            .foregroundColor(.pink)
+            .padding(.vertical, 8)
+            .padding(.horizontal, 12)
+            .background(Color.pink.opacity(0.12))
+            .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -81,4 +187,8 @@ struct ProCardRow: View {
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 3)
     }
+}
+
+#Preview {
+    NavigationStack { HomeView() }
 }
