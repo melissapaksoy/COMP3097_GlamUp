@@ -60,6 +60,7 @@ struct AdminDashboardView: View {
                 BackPillButton { dismiss() }
             }
         }
+        .navigationBarBackButtonHidden(true)
     }
 }
 
