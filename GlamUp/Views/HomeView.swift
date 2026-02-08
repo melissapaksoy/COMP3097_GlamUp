@@ -10,6 +10,8 @@ struct HomeView: View {
         )
     )
     
+    @Environment(\.dismiss) private var dismiss
+    
     private let professionals: [(name: String, role: String, rating: Double, priceFrom: String)] = [
         ("Maria Rodriguez", "Nail Artist", 4.8, "$45"),
         ("Alex Morgan", "Hair Stylist", 4.9, "$60"),
@@ -21,20 +23,6 @@ struct HomeView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // Top bar with Back button (mirrors btnBack)
-                HStack {
-                    Button {
-                        // In a root view, we can't dismiss; this is a placeholder.
-                    } label: {
-                        Image(systemName: "chevron.left")
-                            .font(.headline)
-                            .padding(10)
-                            .background(Color(.systemGray6))
-                            .clipShape(Capsule())
-                    }
-                    Spacer()
-                }
-                .padding([.top, .horizontal])
 
                 ScrollView {
                     VStack(spacing: 16) {
@@ -89,8 +77,13 @@ struct HomeView: View {
                     .padding()
                 }
             }
-            .navigationTitle("")
-            .navigationBarHidden(true)
+            .navigationTitle("Explore")
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    BackPillButton { dismiss() }
+                }
+            }
+            .navigationBarBackButtonHidden(true)
         }
     }
 }

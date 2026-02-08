@@ -73,14 +73,15 @@ struct LoginView: View {
                                 .clipShape(RoundedRectangle(cornerRadius: 12))
                         }
 
-                        Button("BeautyPro Login") {}
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.gray.opacity(0.2))
-                            .foregroundStyle(.primary)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                        
-
+                        NavigationLink(destination: BeautyProDashboardView()) {
+                            Text("BeautyPro Login")
+                            
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.gray.opacity(0.2))
+                                .foregroundStyle(.primary)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
                         NavigationLink(destination: HomeView()) {
                             Text("Client Login")
                                 .frame(maxWidth: .infinity)

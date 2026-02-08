@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct AdminDashboardView: View {
+    @Environment(\.dismiss) private var dismiss
+    
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
@@ -53,6 +55,12 @@ struct AdminDashboardView: View {
             .padding()
         }
         .navigationTitle("Admin Panel")
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                BackPillButton { dismiss() }
+            }
+        }
+        .navigationBarBackButtonHidden(true)
     }
 }
 
