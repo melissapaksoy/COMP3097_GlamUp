@@ -161,3 +161,9 @@ private func SectionHeader(_ text: String) -> some View {
         .font(.headline)
         .foregroundStyle(.pink)
 }
+
+#Preview {
+    NavigationStack {
+        BeautyProfileView(proName: "Sophia Martinez", proRole: "Nail Artist")
+    }
+}
