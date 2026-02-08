@@ -80,12 +80,15 @@ struct LoginView: View {
                             .foregroundStyle(.primary)
                             .clipShape(RoundedRectangle(cornerRadius: 12))
 
-                        Button("Client Login") {}
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.gray.opacity(0.2))
-                            .foregroundStyle(.primary)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        NavigationLink(destination: HomeView()) {
+                            Text("Client Login")
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.gray.opacity(0.2))
+                                .foregroundStyle(.primary)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+
 
                         HStack {
                             Rectangle().fill(.quaternary).frame(height: 1)
