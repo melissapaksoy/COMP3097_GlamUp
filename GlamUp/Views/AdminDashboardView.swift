@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AdminDashboardView: View {
     @Environment(\.dismiss) private var dismiss
+    @State private var showLogout: Bool = false
     
     var body: some View {
         ScrollView {
@@ -56,11 +57,17 @@ struct AdminDashboardView: View {
         }
         .navigationTitle("Admin Panel")
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                BackPillButton { dismiss() }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("Logout") {
+                    showLogout = true
+                }
+                .foregroundStyle(.pink)
             }
         }
         .navigationBarBackButtonHidden(true)
+        .navigationDestination(isPresented: $showLogout) {
+            LoginView()
+        }
     }
 }
 
