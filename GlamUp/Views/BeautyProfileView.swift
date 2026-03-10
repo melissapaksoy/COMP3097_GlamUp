@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 struct BeautyProfileView: View {
@@ -8,6 +7,12 @@ struct BeautyProfileView: View {
     let proRole: String
 
     @State private var selectedSlot: String? = nil
+
+    // Local gallery images (add these to Assets.xcassets)
+    private let galleryImageNames: [String] = [
+        "gallery01", "gallery02", "gallery03",
+        "gallery04", "gallery05", "gallery06"
+    ]
 
     private let services: [ServiceRowData] = [
         .init(title: "Gel Manicure", duration: "45 min", price: "$35"),
@@ -102,14 +107,13 @@ struct BeautyProfileView: View {
                 // Gallery (dummy thumbnails)
                 SectionHeader("Gallery")
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
-                    ForEach(1...9, id: \.self) { _ in
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color(.systemGray5))
+                    ForEach(galleryImageNames, id: \.self) { name in
+                        Image(name)
+                            .resizable()
+                            .scaledToFill()
                             .frame(height: 100)
-                            .overlay(
-                                Image(systemName: "photo")
-                                    .foregroundStyle(.secondary)
-                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .clipped()
                     }
                 }
 
