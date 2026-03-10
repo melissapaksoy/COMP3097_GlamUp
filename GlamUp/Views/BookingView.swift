@@ -139,6 +139,14 @@ struct BookingConfirmationViewSwiftUI: View {
                 .padding()
                 .background(Color(.systemGray6))
                 .clipShape(RoundedRectangle(cornerRadius: 14))
+                .padding(.top, 12)
+
+            VStack(spacing: 20) {
+                NavigationLink(destination: HomeView()) {
+                    PrimaryButton(title: "BACK TO HOME")
+                        .frame(maxWidth: 260)
+                }
+            }
 
             Spacer()
         }
