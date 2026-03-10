@@ -1,150 +1,145 @@
 import SwiftUI
 
 struct LoginView: View {
+    @Environment(\.dismiss) private var dismiss
+
     @State private var email: String = ""
     @State private var password: String = ""
-    @State private var isAdminPresented: Bool = false
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 16) {
-                    VStack(spacing: 8) {
-                        Text("GlamUp!")
-                            .font(.largeTitle).bold()
-                        Image(systemName: "alarm.waves.left.and.right")
-                            .font(.system(size: 44))
-                            .foregroundStyle(.secondary)
-                        Text("Welcome to GlamUp!")
-                            .font(.title3).bold()
-                        Text("Find beauty services near you — nails, lashes, makeup")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    .padding(.top, 24)
-
-                    VStack(spacing: 12) {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Email")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            HStack {
-                                TextField("Enter your email", text: $email)
-                                    .textContentType(.emailAddress)
-                                    .keyboardType(.emailAddress)
-                                    .autocapitalization(.none)
-                                    .textInputAutocapitalization(.never)
-                                Image(systemName: "envelope")
-                                    .foregroundStyle(.secondary)
-                            }
-                            .padding(12)
-                            .background(RoundedRectangle(cornerRadius: 10).strokeBorder(.quaternary))
-                        }
-
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Password")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            HStack {
-                                SecureField("Enter your password", text: $password)
-                                    .textContentType(.password)
-                                Image(systemName: "lock")
-                                    .foregroundStyle(.secondary)
-                            }
-                            .padding(12)
-                            .background(RoundedRectangle(cornerRadius: 10).strokeBorder(.quaternary))
-                        }
-
-                        HStack {
-                            Spacer()
-                            Button("Forgot password?") {}
-                                .font(.footnote)
-                        }
+                    // Back button to match RegisterView
+                    HStack {
+                        BackPillButton { dismiss() }
+                        Spacer()
                     }
 
+                    // Title to match RegisterView styling
+                    Text("Welcome Back")
+                        .font(.title2).bold()
+                        .foregroundStyle(.pink)
+
+                    // Fields styled like RegisterView (roundedBorder)
+                    // Email
+                    HStack {
+                        TextField("Email", text: $email)
+                            .textContentType(.emailAddress)
+                            .keyboardType(.emailAddress)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .padding(.vertical, 14)     // controls height
+                            .padding(.horizontal, 12)
+                    }
+                    .background(Color(.systemGray6))
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+
+                    // Password
+                    HStack {
+                        SecureField("Password", text: $password)
+                            .textContentType(.password)
+                            .padding(.vertical, 14)
+                            .padding(.horizontal, 12)
+                    }
+                    .background(Color(.systemGray6))
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+
+                    // Primary action styled like RegisterView
+                    NavigationLink {
+                        HomeView()
+                    } label: {
+                        PrimaryButton(title: "Login").fontWeight(.bold)
+                    }
+
+                    // Secondary role-based logins grouped similarly
                     VStack(spacing: 10) {
+                        Text("Other options")
+                            .font(.headline)
+                            .foregroundStyle(.secondary)
+
                         NavigationLink(destination: AdminDashboardView()) {
-                            Text("Admin Login")
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color.gray.opacity(0.2))
-                                .foregroundStyle(.primary)
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                            HStack {
+                                Image(systemName: "person.badge.shield.checkmark")
+                                Text("Admin Login")
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color(.systemGray6))
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                            .foregroundStyle(.primary)
                         }
+                        .buttonStyle(.plain)
 
                         NavigationLink(destination: BeautyProDashboardView()) {
-                            Text("BeautyPro Login")
-                            
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color.gray.opacity(0.2))
-                                .foregroundStyle(.primary)
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                            HStack {
+                                Image(systemName: "scissors")
+                                Text("BeautyPro Login")
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color(.systemGray6))
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                            .foregroundStyle(.primary)
                         }
-                        NavigationLink(destination: HomeView()) {
-                            Text("Client Login")
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color.gray.opacity(0.2))
-                                .foregroundStyle(.primary)
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
-                        }
+                        .buttonStyle(.plain)
+                    }
 
-
+                    // Social sign-in styled to match rounded cards
+                    VStack(spacing: 10) {
                         HStack {
                             Rectangle().fill(.quaternary).frame(height: 1)
                             Text("or").font(.caption).foregroundStyle(.secondary)
                             Rectangle().fill(.quaternary).frame(height: 1)
                         }
-                        .padding(.vertical, 6)
 
                         Button {
                             // Google auth action
                         } label: {
-                            HStack {
+                            HStack(spacing: 8) {
                                 Image(systemName: "g.circle")
                                 Text("Continue with Google")
-                                    .fontWeight(.semibold)
                             }
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(Color.gray.opacity(0.15))
+                            .background(Color(.systemGray6))
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
                             .foregroundStyle(.primary)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
                         }
+                        .buttonStyle(.plain)
 
                         Button {
                             // Facebook auth action
                         } label: {
-                            HStack {
+                            HStack(spacing: 8) {
                                 Image(systemName: "f.cursive.circle")
                                 Text("Continue with Facebook")
-                                    .fontWeight(.semibold)
                             }
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(Color.gray.opacity(0.15))
+                            .background(Color(.systemGray6))
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
                             .foregroundStyle(.primary)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
                         }
+                        .buttonStyle(.plain)
                     }
 
+                    // Footer to navigate to RegisterView
                     HStack(spacing: 4) {
                         Text("Don't have an account?")
                             .foregroundStyle(.secondary)
                         NavigationLink(destination: RegisterView()) {
-                            Text("Sign up")
-                                .fontWeight(.semibold)
+                            Text("Sign up!").foregroundStyle(.pink)
                         }
-
                     }
-                    .padding(.vertical, 8)
+                    .padding(.top, 4)
+
+                    Spacer(minLength: 0)
                 }
-                .padding(.horizontal)
+                .padding(20)
             }
             .navigationBarHidden(true)
-            .background(Color(.systemBackground))
+            .background(Color(red: 1.0, green: 0.97, blue: 0.99))
         }
     }
 }

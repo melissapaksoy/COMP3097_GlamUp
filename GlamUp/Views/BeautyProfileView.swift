@@ -167,3 +167,4 @@ private func SectionHeader(_ text: String) -> some View {
         BeautyProfileView(proName: "Sophia Martinez", proRole: "Nail Artist")
     }
 }
+
