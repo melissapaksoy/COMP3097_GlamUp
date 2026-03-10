@@ -11,6 +11,7 @@ struct HomeView: View {
     )
     
     @Environment(\.dismiss) private var dismiss
+    @State private var showLogout: Bool = false
     
     private let professionals: [(name: String, role: String, rating: Double, priceFrom: String)] = [
         ("Maria Rodriguez", "Nail Artist", 4.8, "$45"),
@@ -78,12 +79,18 @@ struct HomeView: View {
                 }
             }
             .navigationTitle("Explore")
+            .navigationBarBackButtonHidden(true)
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    BackPillButton { dismiss() }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Logout") {
+                        showLogout = true
+                    }
+                    .foregroundStyle(.pink)
                 }
             }
-            .navigationBarBackButtonHidden(true)
+            .navigationDestination(isPresented: $showLogout) {
+                LoginView()
+            }
         }
     }
 }
