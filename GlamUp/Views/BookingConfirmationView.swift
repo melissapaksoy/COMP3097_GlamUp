@@ -46,3 +46,4 @@ struct BookingConfirmationView: View {
         .navigationBarBackButtonHidden(true)
     }
 }
+
