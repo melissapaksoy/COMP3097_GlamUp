@@ -17,7 +17,7 @@ struct LoginView: View {
                     }
 
                     // Title to match RegisterView styling
-                    Text("Welcome Back")
+                    Text("Welcome to GlamUp!")
                         .font(.title2).bold()
                         .foregroundStyle(.pink)
 
