@@ -11,6 +11,7 @@ struct BeautyProDashboardView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showAlert: Bool = false
     @State private var alertMessage: String = ""
+    @State private var showLogout: Bool = false
 
     private struct Request: Identifiable {
         let id = UUID()
@@ -29,11 +30,7 @@ struct BeautyProDashboardView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
 
-                // Back button
-                HStack {
-                    BackPillButton { dismiss() }
-                    Spacer()
-                }
+                Spacer(minLength: 0)
 
                 // Title
                 Text("Dashboard")
@@ -82,10 +79,21 @@ struct BeautyProDashboardView: View {
             }
             .padding(20)
         }
-        .navigationBarHidden(true)
+        .navigationTitle("Dashboard")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("Logout") {
+                    showLogout = true
+                }
+                .foregroundStyle(.pink)
+            }
+        }
         .background(Color(red: 1.0, green: 0.97, blue: 0.99))
         .alert(alertMessage, isPresented: $showAlert) {
             Button("OK", role: .cancel) { }
+        }
+        .navigationDestination(isPresented: $showLogout) {
+            LoginView()
         }
     }
 
