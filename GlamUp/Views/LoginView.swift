@@ -1,13 +1,25 @@
 import SwiftUI
+import FirebaseAuth
+import FirebaseFirestore
 
 struct LoginView: View {
+    private enum Destination: Hashable {
+        case admin
+        case beautyPro
+        case client
+    }
+
+    @State private var path: [Destination] = []
+    @State private var isLoading = false
+    @State private var errorMessage: String?
+
     @Environment(\.dismiss) private var dismiss
 
     @State private var email: String = ""
     @State private var password: String = ""
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             ScrollView {
                 VStack(spacing: 16) {
                     // Back button to match RegisterView
@@ -56,8 +68,10 @@ struct LoginView: View {
                     .shadow(color: .black.opacity(0.1), radius: 6, x: 0, y: 2)
 
                     // Primary action styled like RegisterView
-                    NavigationLink {
-                        HomeView()
+                    Button {
+                        Task {
+                            await handleLogin()
+                        }
                     } label: {
                         PrimaryButton(title: "Login").fontWeight(.bold)
                             .overlay(
@@ -65,65 +79,6 @@ struct LoginView: View {
                                     .stroke(Color(.quaternaryLabel), lineWidth: 1)
                             )
                             .shadow(color: .black.opacity(0.1), radius: 6, x: 0, y: 2)
-                    }
-
-                    // Secondary role-based logins grouped similarly
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Other options")
-                            .font(.body)
-                            .foregroundStyle(.secondary)
-
-                        NavigationLink(destination: AdminDashboardView()) {
-                            ZStack {
-                                // Leading icon pinned to the left with the same horizontal padding as the card
-                                HStack {
-                                    Image(systemName: "person.badge.shield.checkmark")
-                                        .foregroundStyle(.pink)
-                                    Spacer()
-                                }
-
-                                // Centered label overlays the whole row
-                                Text("Admin Login")
-                                    .font(.body)
-                                    .multilineTextAlignment(.center)
-                            }
-                            .frame(maxWidth: .infinity, minHeight: 52)
-                            .padding(.horizontal, 12)
-                            .background(Color.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
-                            .foregroundStyle(.primary)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 14)
-                                    .stroke(Color(.quaternaryLabel), lineWidth: 1)
-                            )
-                            .shadow(color: .black.opacity(0.1), radius: 6, x: 0, y: 2)
-                        }
-                        .buttonStyle(.plain)
-
-                        NavigationLink(destination: BeautyProDashboardView()) {
-                            ZStack {
-                                HStack {
-                                    Image(systemName: "scissors")
-                                        .foregroundStyle(.pink)
-                                    Spacer()
-                                }
-
-                                Text("BeautyPro Login")
-                                    .font(.body)
-                                    .multilineTextAlignment(.center)
-                            }
-                            .frame(maxWidth: .infinity, minHeight: 52)
-                            .padding(.horizontal, 12)
-                            .background(Color.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
-                            .foregroundStyle(.primary)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 14)
-                                    .stroke(Color(.quaternaryLabel), lineWidth: 1)
-                            )
-                            .shadow(color: .black.opacity(0.1), radius: 6, x: 0, y: 2)
-                        }
-                        .buttonStyle(.plain)
                     }
 
                     // Social sign-in styled to match rounded cards
@@ -209,6 +164,43 @@ struct LoginView: View {
             }
             .navigationBarHidden(true)
             .background(Color(red: 1.0, green: 0.97, blue: 0.99))
+            .navigationDestination(for: Destination.self) { dest in
+                switch dest {
+                case .admin:
+                    AdminDashboardView()
+                case .beautyPro:
+                    BeautyProDashboardView()
+                case .client:
+                    HomeView()
+                }
+            }
+            .alert("Login Error", isPresented: .constant(errorMessage != nil), presenting: errorMessage) { _ in
+                Button("OK", role: .cancel) { errorMessage = nil }
+            } message: { msg in
+                Text(msg)
+            }
+        }
+    }
+
+    private func handleLogin() async {
+        guard !email.isEmpty, !password.isEmpty else {
+            errorMessage = "Please enter email and password"
+            return
+        }
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            let user = try await AuthService.shared.signIn(email: email, password: password)
+            switch user.role {
+            case .admin:
+                path.append(.admin)
+            case .beautyPro:
+                path.append(.beautyPro)
+            case .client:
+                path.append(.client)
+            }
+        } catch {
+            errorMessage = error.localizedDescription
         }
     }
 }

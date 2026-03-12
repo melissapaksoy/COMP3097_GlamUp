@@ -8,10 +8,9 @@
 import SwiftUI
 
 struct BeautyProDashboardView: View {
-    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var authVM: AuthViewModel
     @State private var showAlert: Bool = false
     @State private var alertMessage: String = ""
-    @State private var showLogout: Bool = false
 
     private struct Request: Identifiable {
         let id = UUID()
@@ -32,12 +31,11 @@ struct BeautyProDashboardView: View {
 
                 Spacer(minLength: 0)
 
-                // Title
                 Text("Dashboard")
-                    .font(.title2).bold()
+                    .font(.title2)
+                    .bold()
                     .foregroundStyle(.pink)
 
-                // Quick action cards
                 Text("Quick Actions")
                     .font(.headline)
                     .foregroundStyle(.secondary)
@@ -46,12 +44,15 @@ struct BeautyProDashboardView: View {
                     QuickActionCard(title: "Manage Services", systemImage: "pencil.and.list.clipboard") {
                         toast("Manage Services (UI only)")
                     }
+
                     QuickActionCard(title: "Set Availability", systemImage: "calendar.badge.clock") {
                         toast("Set Availability (UI only)")
                     }
+
                     QuickActionCard(title: "Portfolio", systemImage: "photo.on.rectangle.angled") {
                         toast("Portfolio Management (UI only)")
                     }
+
                     NavigationLink {
                         RatingsReviewsView()
                     } label: {
@@ -60,7 +61,6 @@ struct BeautyProDashboardView: View {
                     .buttonStyle(.plain)
                 }
 
-                // New Requests
                 Text("New Requests")
                     .font(.headline)
                     .foregroundStyle(.secondary)
@@ -83,7 +83,7 @@ struct BeautyProDashboardView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Logout") {
-                    showLogout = true
+                    authVM.signOut()
                 }
                 .foregroundStyle(.pink)
             }
@@ -91,9 +91,6 @@ struct BeautyProDashboardView: View {
         .background(Color(red: 1.0, green: 0.97, blue: 0.99))
         .alert(alertMessage, isPresented: $showAlert) {
             Button("OK", role: .cancel) { }
-        }
-        .navigationDestination(isPresented: $showLogout) {
-            LoginView()
         }
     }
 
@@ -126,9 +123,12 @@ private struct QuickActionCardContent: View {
                 .foregroundStyle(.pink)
                 .font(.title3)
                 .frame(width: 32, height: 32)
+
             Text(title)
-                .font(.subheadline).bold()
+                .font(.subheadline)
+                .bold()
                 .foregroundStyle(.primary)
+
             Spacer()
         }
         .padding(14)
@@ -147,12 +147,16 @@ private struct RequestRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text(name).font(.headline)
+                Text(name)
+                    .font(.headline)
+
                 Spacer()
+
                 Text(time)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+
             Text(service)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
@@ -160,21 +164,29 @@ private struct RequestRow: View {
             HStack(spacing: 10) {
                 Button(action: accept) {
                     Text("ACCEPT")
-                        .font(.subheadline).bold()
+                        .font(.subheadline)
+                        .bold()
                         .foregroundStyle(.white)
                         .padding(.vertical, 8)
                         .frame(maxWidth: .infinity)
-                        .background(RoundedRectangle(cornerRadius: 10).fill(Color.green))
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(Color.green)
+                        )
                 }
                 .buttonStyle(.plain)
 
                 Button(action: decline) {
                     Text("DECLINE")
-                        .font(.subheadline).bold()
+                        .font(.subheadline)
+                        .bold()
                         .foregroundStyle(.white)
                         .padding(.vertical, 8)
                         .frame(maxWidth: .infinity)
-                        .background(RoundedRectangle(cornerRadius: 10).fill(Color.red))
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(Color.red)
+                        )
                 }
                 .buttonStyle(.plain)
             }
@@ -187,6 +199,8 @@ private struct RequestRow: View {
 }
 
 #Preview {
-    NavigationStack { BeautyProDashboardView() }
+    NavigationStack {
+        BeautyProDashboardView()
+            .environmentObject(AuthViewModel())
+    }
 }
-
