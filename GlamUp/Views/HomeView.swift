@@ -2,6 +2,8 @@ import SwiftUI
 import MapKit
 
 struct HomeView: View {
+    @EnvironmentObject private var authVM: AuthViewModel
+
     @State private var searchText: String = ""
     @State private var cameraPosition: MapCameraPosition = .region(
         MKCoordinateRegion(
@@ -9,10 +11,7 @@ struct HomeView: View {
             span: MKCoordinateSpan(latitudeDelta: 0.2, longitudeDelta: 0.2)
         )
     )
-    
-    @Environment(\.dismiss) private var dismiss
-    @State private var showLogout: Bool = false
-    
+
     private let professionals: [(name: String, role: String, rating: Double, priceFrom: String)] = [
         ("Maria Rodriguez", "Nail Artist", 4.8, "$45"),
         ("Alex Morgan", "Hair Stylist", 4.9, "$60"),
@@ -20,76 +19,66 @@ struct HomeView: View {
         ("Daniel Kim", "Barber", 4.6, "$35"),
         ("Emily Chen", "Esthetician", 4.8, "$55")
     ]
-    
+
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(spacing: 16) {
 
-                ScrollView {
-                    VStack(spacing: 16) {
+                    Text("Explore")
+                        .font(.title)
+                        .fontWeight(.bold)
+                        .padding(.top)
 
-                        // Title
-                        Text("Explore")
-                            .font(.title)
-                            .fontWeight(.bold)
-                            .padding(.top)
+                    HStack(spacing: 8) {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundStyle(.secondary)
 
-                        // Dummy search bar
-                        HStack(spacing: 8) {
-                            Image(systemName: "magnifyingglass")
-                                .foregroundStyle(.secondary)
-                            TextField("Search professionals, services...", text: $searchText)
-                                .textInputAutocapitalization(.never)
-                                .disableAutocorrection(true)
-                        }
-                        .padding(12)
-                        .background(Color(.systemGray6))
+                        TextField("Search professionals, services...", text: $searchText)
+                            .textInputAutocapitalization(.never)
+                            .disableAutocorrection(true)
+                    }
+                    .padding(12)
+                    .background(Color(.systemGray6))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .padding(.horizontal)
+
+                    FiltersRow()
+
+                    Map(position: $cameraPosition)
+                        .mapStyle(.standard)
+                        .frame(height: 180)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                         .padding(.horizontal)
 
-                        // Filter chips row (Price, Availability, Service, Rating)
-                        FiltersRow()
-
-                        // Map preview under filters
-                        Map(position: $cameraPosition)
-                            .mapStyle(.standard)
-                            .frame(height: 180)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                            .padding(.horizontal)
-
-                        // Professional Cards → Profile
-                        ForEach(Array(professionals.enumerated()), id: \.offset) { _, pro in
-                            NavigationLink {
-                                BeautyProfileView(
-                                    proName: pro.name,
-                                    proRole: pro.role
-                                )
-                            } label: {
-                                ProCardRow(
-                                    name: pro.name,
-                                    role: pro.role,
-                                    rating: pro.rating,
-                                    priceFrom: pro.priceFrom
-                                )
-                            }
-                            .buttonStyle(.plain)
+                    ForEach(Array(professionals.enumerated()), id: \.offset) { _, pro in
+                        NavigationLink {
+                            BeautyProfileView(
+                                proName: pro.name,
+                                proRole: pro.role
+                            )
+                        } label: {
+                            ProCardRow(
+                                name: pro.name,
+                                role: pro.role,
+                                rating: pro.rating,
+                                priceFrom: pro.priceFrom
+                            )
                         }
+                        .buttonStyle(.plain)
                     }
-                    .padding()
                 }
+                .padding()
             }
-            .navigationTitle("Explore")
-            .navigationBarBackButtonHidden(true)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Logout") {
-                        showLogout = true
-                    }
-                    .foregroundStyle(.pink)
+        }
+        .navigationTitle("Explore")
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("Logout") {
+                    authVM.signOut()
                 }
-            }
-            .navigationDestination(isPresented: $showLogout) {
-                LoginView()
+                .foregroundStyle(.pink)
             }
         }
     }
@@ -130,7 +119,8 @@ private struct FilterChip: View {
             HStack(spacing: 6) {
                 Image(systemName: "line.3.horizontal.decrease.circle")
                 Text(title)
-                    .font(.subheadline).bold()
+                    .font(.subheadline)
+                    .bold()
             }
             .foregroundColor(.pink)
             .padding(.vertical, 8)
@@ -151,8 +141,6 @@ struct ProCardRow: View {
 
     var body: some View {
         HStack(spacing: 14) {
-
-            // Avatar placeholder
             Circle()
                 .fill(Color.pink.opacity(0.2))
                 .frame(width: 56, height: 56)
@@ -190,5 +178,8 @@ struct ProCardRow: View {
 }
 
 #Preview {
-    NavigationStack { HomeView() }
+    NavigationStack {
+        HomeView()
+            .environmentObject(AuthViewModel())
+    }
 }
