@@ -1,3 +1,6 @@
+<<<<<<< HEAD
 # Xcode user data
+=======
+>>>>>>> f19d76e (added .gitignore)
 xcuserdata/
 *.xcuserstate
