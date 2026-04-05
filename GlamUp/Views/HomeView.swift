@@ -15,9 +15,9 @@ struct HomeView: View {
     )
 
     // MARK: Filters
-    @State private var selectedService: String? = nil
-    @State private var sortByPrice = false
-    @State private var sortByRating = false
+    @State private var selectedService: String = "All"
+    @State private var selectedPriceSort: String = "None"
+    @State private var selectedRatingFilter: String = "All"
 
     // Dynamic ratings
     @State private var ratingsMap: [String: Double] = [:]
@@ -30,10 +30,33 @@ struct HomeView: View {
         .init(id: "pro_005", name: "Emily Chen", role: "Esthetician", rating: 4.8, priceFrom: 55)
     ]
 
+    private let serviceOptions = [
+        "All",
+        "Nail Artist",
+        "Hair Stylist",
+        "Makeup Artist",
+        "Barber",
+        "Esthetician"
+    ]
+
+    private let priceOptions = [
+        "None",
+        "Low to High",
+        "High to Low"
+    ]
+
+    private let ratingOptions = [
+        "All",
+        "4.5+",
+        "4.0+",
+        "3.5+",
+        "3.0+"
+    ]
+
     private var filteredProfessionals: [Professional] {
         var result = professionals
 
-        // 🔍 SEARCH
+        // 🔍 Search
         let trimmed = searchText.lowercased()
         if !trimmed.isEmpty {
             result = result.filter {
@@ -42,21 +65,32 @@ struct HomeView: View {
             }
         }
 
-        // 🎯 SERVICE FILTER
-        if let selectedService {
+        // 🎯 Service filter
+        if selectedService != "All" {
             result = result.filter { $0.role == selectedService }
         }
 
-        // ⭐ SORTING
-        if sortByRating {
-            result.sort {
-                (ratingsMap[$0.id] ?? $0.rating) >
-                (ratingsMap[$1.id] ?? $1.rating)
+        // ⭐ Rating range filter
+        if selectedRatingFilter != "All" {
+            let minRating: Double
+            switch selectedRatingFilter {
+            case "4.5+": minRating = 4.5
+            case "4.0+": minRating = 4.0
+            case "3.5+": minRating = 3.5
+            case "3.0+": minRating = 3.0
+            default: minRating = 0
+            }
+
+            result = result.filter {
+                (ratingsMap[$0.id] ?? $0.rating) >= minRating
             }
         }
 
-        if sortByPrice {
+        // 💲 Price sort
+        if selectedPriceSort == "Low to High" {
             result.sort { $0.priceFrom < $1.priceFrom }
+        } else if selectedPriceSort == "High to Low" {
+            result.sort { $0.priceFrom > $1.priceFrom }
         }
 
         return result
@@ -64,34 +98,75 @@ struct HomeView: View {
 
     var body: some View {
         VStack {
-            ScrollView {
-                VStack(spacing: 16) {
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 18) {
 
-                    Text("Explore")
-                        .font(.title)
-                        .fontWeight(.bold)
 
                     // 🔍 SEARCH BAR
-                    HStack {
+                    HStack(spacing: 10) {
                         Image(systemName: "magnifyingglass")
+                            .foregroundStyle(.secondary)
+
                         TextField("Search services or professionals...", text: $searchText)
+                            .font(.subheadline)
                     }
-                    .padding()
-                    .background(Color(.systemGray6))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .padding(.vertical, 12)
+                    .padding(.horizontal, 14)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .shadow(color: .black.opacity(0.04), radius: 6, x: 0, y: 3)
                     .padding(.horizontal)
 
-                    // 🎯 FILTERS
-                    FiltersRow(
-                        selectedService: $selectedService,
-                        sortByPrice: $sortByPrice,
-                        sortByRating: $sortByRating
-                    )
+                    // 🎯 FILTER DROPDOWNS
+                    HStack(spacing: 10) {
+                        Menu {
+                            ForEach(priceOptions, id: \.self) { option in
+                                Button(option) {
+                                    selectedPriceSort = option
+                                }
+                            }
+                        } label: {
+                            SlimFilterDropdownButton(
+                                title: "Price",
+                                isActive: selectedPriceSort != "None"
+                            )
+                        }
+                        .frame(maxWidth: .infinity)
+
+                        Menu {
+                            ForEach(serviceOptions, id: \.self) { option in
+                                Button(option) {
+                                    selectedService = option
+                                }
+                            }
+                        } label: {
+                            SlimFilterDropdownButton(
+                                title: "Service",
+                                isActive: selectedService != "All"
+                            )
+                        }
+                        .frame(maxWidth: .infinity)
+
+                        Menu {
+                            ForEach(ratingOptions, id: \.self) { option in
+                                Button(option) {
+                                    selectedRatingFilter = option
+                                }
+                            }
+                        } label: {
+                            SlimFilterDropdownButton(
+                                title: "Ratings",
+                                isActive: selectedRatingFilter != "All"
+                            )
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    .padding(.horizontal)
 
                     // MAP
                     Map(position: $cameraPosition)
                         .frame(height: 180)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
                         .padding(.horizontal)
 
                     // PROFESSIONAL LIST
@@ -108,6 +183,8 @@ struct HomeView: View {
                         }
                         .buttonStyle(.plain)
                     }
+
+                    Spacer(minLength: 16)
                 }
                 .padding()
             }
@@ -131,6 +208,7 @@ struct HomeView: View {
         .onAppear {
             fetchRatings()
         }
+        .background(Color(red: 1.0, green: 0.97, blue: 0.99))
     }
 
     // MARK: Firestore Ratings
@@ -166,69 +244,36 @@ struct Professional: Identifiable, Hashable {
     let priceFrom: Double
 }
 
-
-// MARK: FILTER ROW
-struct FiltersRow: View {
-    @Binding var selectedService: String?
-    @Binding var sortByPrice: Bool
-    @Binding var sortByRating: Bool
-
-    private let services = [
-        "Nail Artist",
-        "Hair Stylist",
-        "Makeup Artist",
-        "Barber",
-        "Esthetician"
-    ]
-
-    var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 10) {
-
-                // PRICE SORT
-                FilterChip(title: "Price") {
-                    sortByPrice.toggle()
-                    sortByRating = false
-                }
-
-                // RATING SORT
-                FilterChip(title: "Rating") {
-                    sortByRating.toggle()
-                    sortByPrice = false
-                }
-
-                // SERVICE FILTERS
-                ForEach(services, id: \.self) { service in
-                    FilterChip(title: service) {
-                        selectedService = selectedService == service ? nil : service
-                    }
-                }
-            }
-            .padding(.horizontal)
-        }
-    }
-}
-
-// MARK: CHIP
-struct FilterChip: View {
+// MARK: - SLIM FILTER BUTTON
+struct SlimFilterDropdownButton: View {
     let title: String
-    let action: () -> Void
+    let isActive: Bool
 
     var body: some View {
-        Button(action: action) {
+        HStack(spacing: 5) {
             Text(title)
                 .font(.subheadline)
-                .bold()
-                .foregroundColor(.pink)
-                .padding(.vertical, 8)
-                .padding(.horizontal, 12)
-                .background(Color.pink.opacity(0.12))
-                .clipShape(Capsule())
+                .fontWeight(.medium)
+                .lineLimit(1)
+
+            Image(systemName: "chevron.down")
+                .font(.system(size: 10, weight: .semibold))
         }
+        .foregroundColor(isActive ? .white : .pink)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 11)
+        .background(isActive ? Color.pink : Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Color.pink.opacity(isActive ? 0 : 0.18), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.03), radius: 4, x: 0, y: 2)
+        .animation(.easeInOut(duration: 0.18), value: isActive)
     }
 }
 
-// MARK: CARD
+// MARK: - PROFESSIONAL CARD
 struct ProCardRow: View {
     let name: String
     let role: String
@@ -236,20 +281,28 @@ struct ProCardRow: View {
     let priceFrom: Double
 
     var body: some View {
-        HStack {
+        HStack(spacing: 14) {
             Circle()
-                .fill(Color.pink.opacity(0.2))
+                .fill(Color.pink.opacity(0.18))
                 .frame(width: 56, height: 56)
                 .overlay(
                     Text(String(name.prefix(1)))
-                        .font(.title)
+                        .font(.title3)
+                        .fontWeight(.bold)
                         .foregroundColor(.pink)
                 )
 
-            VStack(alignment: .leading) {
-                Text(name).font(.headline)
-                Text(role).foregroundColor(.secondary)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(name)
+                    .font(.headline)
+
+                Text(role)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+
                 Text("★ \(rating, specifier: "%.1f")")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
             }
 
             Spacer()
@@ -257,10 +310,11 @@ struct ProCardRow: View {
             Text("From $\(Int(priceFrom))")
                 .foregroundColor(.pink)
                 .fontWeight(.bold)
+                .font(.subheadline)
         }
         .padding()
         .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .shadow(color: .black.opacity(0.05), radius: 5)
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .shadow(color: .black.opacity(0.04), radius: 6, x: 0, y: 3)
     }
 }
