@@ -1,10 +1,12 @@
 import SwiftUI
 import MapKit
+import FirebaseFirestore
 
 struct HomeView: View {
     @EnvironmentObject private var authVM: AuthViewModel
 
     @State private var searchText: String = ""
+    @State private var selectedProfessional: Professional? = nil
     @State private var cameraPosition: MapCameraPosition = .region(
         MKCoordinateRegion(
             center: CLLocationCoordinate2D(latitude: 43.6532, longitude: -79.3832),
@@ -12,13 +14,26 @@ struct HomeView: View {
         )
     )
 
-    private let professionals: [(name: String, role: String, rating: Double, priceFrom: String)] = [
-        ("Maria Rodriguez", "Nail Artist", 4.8, "$45"),
-        ("Alex Morgan", "Hair Stylist", 4.9, "$60"),
-        ("Sophia Martinez", "Makeup Artist", 4.7, "$50"),
-        ("Daniel Kim", "Barber", 4.6, "$35"),
-        ("Emily Chen", "Esthetician", 4.8, "$55")
+    // Dynamic ratings from Firestore
+    @State private var ratingsMap: [String: Double] = [:]
+
+    private let professionals: [Professional] = [
+        .init(id: "pro_001", name: "Maria Rodriguez", role: "Nail Artist", rating: 4.8, priceFrom: "$45"),
+        .init(id: "pro_002", name: "Alex Morgan", role: "Hair Stylist", rating: 4.9, priceFrom: "$60"),
+        .init(id: "pro_003", name: "Sophia Martinez", role: "Makeup Artist", rating: 4.7, priceFrom: "$50"),
+        .init(id: "pro_004", name: "Daniel Kim", role: "Barber", rating: 4.6, priceFrom: "$35"),
+        .init(id: "pro_005", name: "Emily Chen", role: "Esthetician", rating: 4.8, priceFrom: "$55")
     ]
+
+    private var filteredProfessionals: [Professional] {
+        let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return professionals }
+
+        return professionals.filter {
+            $0.name.localizedCaseInsensitiveContains(trimmed) ||
+            $0.role.localizedCaseInsensitiveContains(trimmed)
+        }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -51,17 +66,16 @@ struct HomeView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                         .padding(.horizontal)
 
-                    ForEach(Array(professionals.enumerated()), id: \.offset) { _, pro in
-                        NavigationLink {
-                            BeautyProfileView(
-                                proName: pro.name,
-                                proRole: pro.role
-                            )
+                    ForEach(filteredProfessionals) { pro in
+                        Button {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                                selectedProfessional = pro
+                            }
                         } label: {
                             ProCardRow(
                                 name: pro.name,
                                 role: pro.role,
-                                rating: pro.rating,
+                                rating: ratingsMap[pro.id] ?? pro.rating, // ✅ dynamic fallback
                                 priceFrom: pro.priceFrom
                             )
                         }
@@ -81,7 +95,57 @@ struct HomeView: View {
                 .foregroundStyle(.pink)
             }
         }
+        .navigationDestination(item: $selectedProfessional) { pro in
+            BeautyProfileView(
+                proUserID: pro.id,
+                proName: pro.name,
+                proRole: pro.role
+            )
+        }
+        .onAppear {
+            fetchRatings()
+        }
     }
+
+    // MARK: - Fetch average ratings from Firestore
+    private func fetchRatings() {
+        let db = Firestore.firestore()
+
+        for pro in professionals {
+            db.collection("reviews")
+                .whereField("proUserID", isEqualTo: pro.id)
+                .getDocuments { snapshot, error in
+                    guard error == nil, let documents = snapshot?.documents else {
+                        return
+                    }
+
+                    let ratings = documents.compactMap { doc -> Double? in
+                        let ratingValue = doc.data()["rating"]
+
+                        if let doubleRating = ratingValue as? Double {
+                            return doubleRating
+                        } else if let intRating = ratingValue as? Int {
+                            return Double(intRating)
+                        } else {
+                            return nil
+                        }
+                    }
+
+                    if !ratings.isEmpty {
+                        let avg = ratings.reduce(0, +) / Double(ratings.count)
+                        ratingsMap[pro.id] = avg
+                    }
+                }
+        }
+    }
+}
+
+struct Professional: Identifiable, Hashable {
+    let id: String
+    let name: String
+    let role: String
+    let rating: Double
+    let priceFrom: String
 }
 
 // MARK: - Filters Row

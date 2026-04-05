@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import FirebaseAuth
 
 struct BeautyProDashboardView: View {
     @EnvironmentObject private var authVM: AuthViewModel
@@ -52,13 +53,11 @@ struct BeautyProDashboardView: View {
                     QuickActionCard(title: "Portfolio", systemImage: "photo.on.rectangle.angled") {
                         toast("Portfolio Management (UI only)")
                     }
-
-                    NavigationLink {
-                        RatingsReviewsView()
-                    } label: {
-                        QuickActionCardContent(title: "Client Reviews", systemImage: "star.bubble")
+                    QuickActionCard(title: "Ratings & Reviews", systemImage: "star.bubble") {
+                        toast("Ratings & Reviews (UI only)")
                     }
-                    .buttonStyle(.plain)
+
+                    
                 }
 
                 Text("New Requests")
