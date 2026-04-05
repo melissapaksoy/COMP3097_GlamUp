@@ -14,68 +14,95 @@ struct HomeView: View {
         )
     )
 
-    // Dynamic ratings from Firestore
+    // MARK: Filters
+    @State private var selectedService: String? = nil
+    @State private var sortByPrice = false
+    @State private var sortByRating = false
+
+    // Dynamic ratings
     @State private var ratingsMap: [String: Double] = [:]
 
     private let professionals: [Professional] = [
-        .init(id: "pro_001", name: "Maria Rodriguez", role: "Nail Artist", rating: 4.8, priceFrom: "$45"),
-        .init(id: "pro_002", name: "Alex Morgan", role: "Hair Stylist", rating: 4.9, priceFrom: "$60"),
-        .init(id: "pro_003", name: "Sophia Martinez", role: "Makeup Artist", rating: 4.7, priceFrom: "$50"),
-        .init(id: "pro_004", name: "Daniel Kim", role: "Barber", rating: 4.6, priceFrom: "$35"),
-        .init(id: "pro_005", name: "Emily Chen", role: "Esthetician", rating: 4.8, priceFrom: "$55")
+        .init(id: "pro_001", name: "Maria Rodriguez", role: "Nail Artist", rating: 4.8, priceFrom: 45),
+        .init(id: "pro_002", name: "Alex Morgan", role: "Hair Stylist", rating: 4.9, priceFrom: 60),
+        .init(id: "pro_003", name: "Sophia Martinez", role: "Makeup Artist", rating: 4.7, priceFrom: 50),
+        .init(id: "pro_004", name: "Daniel Kim", role: "Barber", rating: 4.6, priceFrom: 35),
+        .init(id: "pro_005", name: "Emily Chen", role: "Esthetician", rating: 4.8, priceFrom: 55)
     ]
 
     private var filteredProfessionals: [Professional] {
-        let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return professionals }
+        var result = professionals
 
-        return professionals.filter {
-            $0.name.localizedCaseInsensitiveContains(trimmed) ||
-            $0.role.localizedCaseInsensitiveContains(trimmed)
+        // 🔍 SEARCH
+        let trimmed = searchText.lowercased()
+        if !trimmed.isEmpty {
+            result = result.filter {
+                $0.name.lowercased().contains(trimmed) ||
+                $0.role.lowercased().contains(trimmed)
+            }
         }
+
+        // 🎯 SERVICE FILTER
+        if let selectedService {
+            result = result.filter { $0.role == selectedService }
+        }
+
+        // ⭐ SORTING
+        if sortByRating {
+            result.sort {
+                (ratingsMap[$0.id] ?? $0.rating) >
+                (ratingsMap[$1.id] ?? $1.rating)
+            }
+        }
+
+        if sortByPrice {
+            result.sort { $0.priceFrom < $1.priceFrom }
+        }
+
+        return result
     }
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack {
             ScrollView {
                 VStack(spacing: 16) {
 
                     Text("Explore")
                         .font(.title)
                         .fontWeight(.bold)
-                        .padding(.top)
 
-                    HStack(spacing: 8) {
+                    // 🔍 SEARCH BAR
+                    HStack {
                         Image(systemName: "magnifyingglass")
-                            .foregroundStyle(.secondary)
-
-                        TextField("Search professionals, services...", text: $searchText)
-                            .textInputAutocapitalization(.never)
-                            .disableAutocorrection(true)
+                        TextField("Search services or professionals...", text: $searchText)
                     }
-                    .padding(12)
+                    .padding()
                     .background(Color(.systemGray6))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .padding(.horizontal)
 
-                    FiltersRow()
+                    // 🎯 FILTERS
+                    FiltersRow(
+                        selectedService: $selectedService,
+                        sortByPrice: $sortByPrice,
+                        sortByRating: $sortByRating
+                    )
 
+                    // MAP
                     Map(position: $cameraPosition)
-                        .mapStyle(.standard)
                         .frame(height: 180)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                         .padding(.horizontal)
 
+                    // PROFESSIONAL LIST
                     ForEach(filteredProfessionals) { pro in
                         Button {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                                selectedProfessional = pro
-                            }
+                            selectedProfessional = pro
                         } label: {
                             ProCardRow(
                                 name: pro.name,
                                 role: pro.role,
-                                rating: ratingsMap[pro.id] ?? pro.rating, // ✅ dynamic fallback
+                                rating: ratingsMap[pro.id] ?? pro.rating,
                                 priceFrom: pro.priceFrom
                             )
                         }
@@ -86,7 +113,6 @@ struct HomeView: View {
             }
         }
         .navigationTitle("Explore")
-        .navigationBarBackButtonHidden(true)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Logout") {
@@ -107,33 +133,25 @@ struct HomeView: View {
         }
     }
 
-    // MARK: - Fetch average ratings from Firestore
+    // MARK: Firestore Ratings
     private func fetchRatings() {
         let db = Firestore.firestore()
 
         for pro in professionals {
             db.collection("reviews")
                 .whereField("proUserID", isEqualTo: pro.id)
-                .getDocuments { snapshot, error in
-                    guard error == nil, let documents = snapshot?.documents else {
-                        return
-                    }
+                .getDocuments { snapshot, _ in
+                    guard let docs = snapshot?.documents else { return }
 
-                    let ratings = documents.compactMap { doc -> Double? in
-                        let ratingValue = doc.data()["rating"]
-
-                        if let doubleRating = ratingValue as? Double {
-                            return doubleRating
-                        } else if let intRating = ratingValue as? Int {
-                            return Double(intRating)
-                        } else {
-                            return nil
-                        }
+                    let ratings = docs.compactMap { doc -> Double? in
+                        let val = doc["rating"]
+                        if let d = val as? Double { return d }
+                        if let i = val as? Int { return Double(i) }
+                        return nil
                     }
 
                     if !ratings.isEmpty {
-                        let avg = ratings.reduce(0, +) / Double(ratings.count)
-                        ratingsMap[pro.id] = avg
+                        ratingsMap[pro.id] = ratings.reduce(0, +) / Double(ratings.count)
                     }
                 }
         }
@@ -145,105 +163,104 @@ struct Professional: Identifiable, Hashable {
     let name: String
     let role: String
     let rating: Double
-    let priceFrom: String
+    let priceFrom: Double
 }
 
-// MARK: - Filters Row
-private struct FiltersRow: View {
-    @State private var showAlert: Bool = false
-    @State private var alertMessage: String = ""
+
+// MARK: FILTER ROW
+struct FiltersRow: View {
+    @Binding var selectedService: String?
+    @Binding var sortByPrice: Bool
+    @Binding var sortByRating: Bool
+
+    private let services = [
+        "Nail Artist",
+        "Hair Stylist",
+        "Makeup Artist",
+        "Barber",
+        "Esthetician"
+    ]
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 10) {
-                FilterChip(title: "Price") { toast("Sort: Price") }
-                FilterChip(title: "Availability") { toast("Filter: Availability") }
-                FilterChip(title: "Service") { toast("Filter: Service") }
-                FilterChip(title: "Rating") { toast("Filter: Rating") }
+
+                // PRICE SORT
+                FilterChip(title: "Price") {
+                    sortByPrice.toggle()
+                    sortByRating = false
+                }
+
+                // RATING SORT
+                FilterChip(title: "Rating") {
+                    sortByRating.toggle()
+                    sortByPrice = false
+                }
+
+                // SERVICE FILTERS
+                ForEach(services, id: \.self) { service in
+                    FilterChip(title: service) {
+                        selectedService = selectedService == service ? nil : service
+                    }
+                }
             }
             .padding(.horizontal)
         }
-        .alert(alertMessage, isPresented: $showAlert) {
-            Button("OK", role: .cancel) { }
-        }
-    }
-
-    private func toast(_ message: String) {
-        alertMessage = message
-        showAlert = true
     }
 }
 
-private struct FilterChip: View {
+// MARK: CHIP
+struct FilterChip: View {
     let title: String
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 6) {
-                Image(systemName: "line.3.horizontal.decrease.circle")
-                Text(title)
-                    .font(.subheadline)
-                    .bold()
-            }
-            .foregroundColor(.pink)
-            .padding(.vertical, 8)
-            .padding(.horizontal, 12)
-            .background(Color.pink.opacity(0.12))
-            .clipShape(Capsule())
+            Text(title)
+                .font(.subheadline)
+                .bold()
+                .foregroundColor(.pink)
+                .padding(.vertical, 8)
+                .padding(.horizontal, 12)
+                .background(Color.pink.opacity(0.12))
+                .clipShape(Capsule())
         }
-        .buttonStyle(.plain)
     }
 }
 
-// MARK: - Professional Card
+// MARK: CARD
 struct ProCardRow: View {
     let name: String
     let role: String
     let rating: Double
-    let priceFrom: String
+    let priceFrom: Double
 
     var body: some View {
-        HStack(spacing: 14) {
+        HStack {
             Circle()
                 .fill(Color.pink.opacity(0.2))
                 .frame(width: 56, height: 56)
                 .overlay(
                     Text(String(name.prefix(1)))
                         .font(.title)
-                        .fontWeight(.bold)
                         .foregroundColor(.pink)
                 )
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(name)
-                    .font(.headline)
-
-                Text(role)
-                    .foregroundColor(.secondary)
-
+            VStack(alignment: .leading) {
+                Text(name).font(.headline)
+                Text(role).foregroundColor(.secondary)
                 Text("★ \(rating, specifier: "%.1f")")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
             }
 
             Spacer()
 
-            Text("From \(priceFrom)")
-                .font(.subheadline)
-                .fontWeight(.bold)
+            Text("From $\(Int(priceFrom))")
                 .foregroundColor(.pink)
+                .fontWeight(.bold)
         }
         .padding()
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 14))
-        .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 3)
-    }
-}
-
-#Preview {
-    NavigationStack {
-        HomeView()
-            .environmentObject(AuthViewModel())
+        .shadow(color: .black.opacity(0.05), radius: 5)
     }
 }
