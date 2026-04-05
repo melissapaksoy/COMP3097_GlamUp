@@ -7,11 +7,13 @@
 
 import SwiftUI
 import FirebaseAuth
+import FirebaseFirestore
 
 struct BeautyProDashboardView: View {
     @EnvironmentObject private var authVM: AuthViewModel
-    @State private var showAlert: Bool = false
-    @State private var alertMessage: String = ""
+
+    @State private var proName: String = ""
+    @State private var proUID: String = ""
 
     private struct Request: Identifiable {
         let id = UUID()
@@ -20,7 +22,7 @@ struct BeautyProDashboardView: View {
         let time: String
     }
 
-    private let requests: [Request] = [
+    @State private var requests: [Request] = [
         .init(name: "Lisa Chen", service: "Gel Manicure", time: "Today • 3:00 PM"),
         .init(name: "Rachel Adams", service: "Hair Styling", time: "Tomorrow • 11:30 AM"),
         .init(name: "Amira Patel", service: "Bridal Makeup", time: "Fri • 2:15 PM")
@@ -42,22 +44,33 @@ struct BeautyProDashboardView: View {
                     .foregroundStyle(.secondary)
 
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                    QuickActionCard(title: "Manage Services", systemImage: "pencil.and.list.clipboard") {
-                        toast("Manage Services (UI only)")
+                    NavigationLink {
+                        ManageServicesView(proUID: proUID)
+                    } label: {
+                        QuickActionCardContent(title: "Manage Services", systemImage: "pencil.and.list.clipboard")
                     }
+                    .buttonStyle(.plain)
 
-                    QuickActionCard(title: "Set Availability", systemImage: "calendar.badge.clock") {
-                        toast("Set Availability (UI only)")
+                    NavigationLink {
+                        SetAvailabilityView(proUID: proUID)
+                    } label: {
+                        QuickActionCardContent(title: "Set Availability", systemImage: "calendar.badge.clock")
                     }
+                    .buttonStyle(.plain)
 
-                    QuickActionCard(title: "Portfolio", systemImage: "photo.on.rectangle.angled") {
-                        toast("Portfolio Management (UI only)")
+                    NavigationLink {
+                        PortfolioView()
+                    } label: {
+                        QuickActionCardContent(title: "Portfolio", systemImage: "photo.on.rectangle.angled")
                     }
-                    QuickActionCard(title: "Ratings & Reviews", systemImage: "star.bubble") {
-                        toast("Ratings & Reviews (UI only)")
-                    }
+                    .buttonStyle(.plain)
 
-                    
+                    NavigationLink {
+                        RatingsReviewsView(proName: proName, proUserID: proUID)
+                    } label: {
+                        QuickActionCardContent(title: "Ratings & Reviews", systemImage: "star.bubble")
+                    }
+                    .buttonStyle(.plain)
                 }
 
                 Text("New Requests")
@@ -65,14 +78,26 @@ struct BeautyProDashboardView: View {
                     .foregroundStyle(.secondary)
 
                 VStack(spacing: 12) {
-                    ForEach(requests) { r in
-                        RequestRow(
-                            name: r.name,
-                            service: r.service,
-                            time: r.time,
-                            accept: { toast("Accepted \(r.name) (demo only)") },
-                            decline: { toast("Declined \(r.name) (demo only)") }
-                        )
+                    if requests.isEmpty {
+                        VStack(spacing: 10) {
+                            Image(systemName: "tray")
+                                .font(.system(size: 36))
+                                .foregroundStyle(.pink.opacity(0.4))
+                            Text("No pending requests")
+                                .foregroundStyle(.secondary)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 30)
+                    } else {
+                        ForEach(requests) { r in
+                            RequestRow(
+                                name: r.name,
+                                service: r.service,
+                                time: r.time,
+                                accept: { removeRequest(r) },
+                                decline: { removeRequest(r) }
+                            )
+                        }
                     }
                 }
             }
@@ -88,27 +113,25 @@ struct BeautyProDashboardView: View {
             }
         }
         .background(Color(red: 1.0, green: 0.97, blue: 0.99))
-        .alert(alertMessage, isPresented: $showAlert) {
-            Button("OK", role: .cancel) { }
+        .onAppear { fetchProInfo() }
+    }
+
+    private func fetchProInfo() {
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+        proUID = uid
+
+        Firestore.firestore().collection("users").document(uid).getDocument { doc, _ in
+            guard let data = doc?.data() else { return }
+            proName = (data["fullName"] as? String)
+                ?? (data["email"] as? String)
+                ?? "Beauty Pro"
         }
     }
 
-    private func toast(_ message: String) {
-        alertMessage = message
-        showAlert = true
-    }
-}
-
-private struct QuickActionCard: View {
-    let title: String
-    let systemImage: String
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            QuickActionCardContent(title: title, systemImage: systemImage)
+    private func removeRequest(_ request: Request) {
+        withAnimation {
+            requests.removeAll { $0.id == request.id }
         }
-        .buttonStyle(.plain)
     }
 }
 
