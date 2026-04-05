@@ -14,7 +14,6 @@ struct RatingsReviewsView: View {
     @State private var currentUserRole: String? = nil
     @State private var errorMessage: String? = nil
 
-    // Review form
     @State private var rating = 0
     @State private var reviewText = ""
     @State private var isSubmitting = false
@@ -30,8 +29,8 @@ struct RatingsReviewsView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 24) {
 
                 // Header
                 HStack {
@@ -40,99 +39,128 @@ struct RatingsReviewsView: View {
                     } label: {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(.black)
-                            .frame(width: 44, height: 44)
-                            .background(Color(.systemGray6))
+                            .foregroundColor(.primary)
+                            .frame(width: 42, height: 42)
+                            .background(Color.white)
                             .clipShape(Circle())
+                            .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 3)
                     }
 
                     Spacer()
 
                     Text("Ratings & Reviews")
                         .font(.title3)
-                        .bold()
+                        .fontWeight(.semibold)
 
                     Spacer()
 
                     Color.clear
-                        .frame(width: 44, height: 44)
+                        .frame(width: 42, height: 42)
                 }
-                .padding(.top, 8)
+                .padding(.top, 6)
 
-                // Summary
-                if !reviews.isEmpty {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Overall Rating")
-                            .font(.headline)
-                            .foregroundStyle(.secondary)
+                // Pro Name
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(proName)
+                        .font(.title2)
+                        .fontWeight(.bold)
 
-                        HStack(alignment: .center, spacing: 16) {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(String(format: "%.1f", averageRating))
-                                    .font(.system(size: 36, weight: .bold))
-                                    .foregroundStyle(.pink)
+                    Text("See what clients are saying")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
 
-                                HStack(spacing: 3) {
-                                    ForEach(1...5, id: \.self) { idx in
-                                        Image(systemName: idx <= Int(round(averageRating)) ? "star.fill" : "star")
-                                            .foregroundColor(.yellow)
-                                    }
+                // Summary Card
+                VStack(spacing: 18) {
+                    HStack(alignment: .center) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(String(format: "%.1f", averageRating))
+                                .font(.system(size: 42, weight: .bold))
+                                .foregroundStyle(.pink)
+
+                            HStack(spacing: 4) {
+                                ForEach(1...5, id: \.self) { idx in
+                                    Image(systemName: idx <= Int(round(averageRating)) ? "star.fill" : "star")
+                                        .foregroundColor(.yellow)
+                                        .font(.subheadline)
                                 }
-
-                                Text("\(reviews.count) review\(reviews.count == 1 ? "" : "s")")
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
                             }
 
-                            Spacer()
+                            Text("\(reviews.count) review\(reviews.count == 1 ? "" : "s")")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
 
-                            Image(systemName: "star.bubble.fill")
-                                .font(.system(size: 42))
-                                .foregroundStyle(.pink.opacity(0.8))
+                        Spacer()
+
+                        ZStack {
+                            Circle()
+                                .fill(Color.pink.opacity(0.12))
+                                .frame(width: 74, height: 74)
+
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 28))
+                                .foregroundStyle(.pink)
                         }
                     }
-                    .padding(18)
-                    .background(Color.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 18))
-                    .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
                 }
+                .padding(22)
+                .background(
+                    LinearGradient(
+                        colors: [Color.white, Color(red: 1.0, green: 0.96, blue: 0.98)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 24))
+                .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 4)
 
-                // Leave review section (CLIENTS CAN SUBMIT MULTIPLE REVIEWS)
+                // Leave Review Card
                 if userIsClient {
-                    VStack(alignment: .leading, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 18) {
                         Text("Leave a Review")
                             .font(.title3)
-                            .bold()
+                            .fontWeight(.bold)
 
-                        Text("Rating")
-                            .font(.headline)
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("Your Rating")
+                                .font(.headline)
 
-                        HStack(spacing: 10) {
-                            ForEach(1...5, id: \.self) { star in
-                                Image(systemName: star <= rating ? "star.fill" : "star")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 30, height: 30)
-                                    .foregroundColor(star <= rating ? .yellow : .gray.opacity(0.5))
-                                    .onTapGesture {
-                                        rating = star
-                                    }
+                            HStack(spacing: 12) {
+                                ForEach(1...5, id: \.self) { star in
+                                    Image(systemName: star <= rating ? "star.fill" : "star")
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(width: 30, height: 30)
+                                        .foregroundColor(star <= rating ? .yellow : .gray.opacity(0.4))
+                                        .scaleEffect(star <= rating ? 1.05 : 1.0)
+                                        .animation(.easeInOut(duration: 0.15), value: rating)
+                                        .onTapGesture {
+                                            rating = star
+                                        }
+                                }
                             }
                         }
 
-                        VStack(alignment: .leading, spacing: 8) {
+                        VStack(alignment: .leading, spacing: 10) {
                             Text("Your Feedback")
                                 .font(.headline)
 
-                            TextEditor(text: $reviewText)
-                                .frame(height: 120)
-                                .padding(10)
-                                .background(Color.white)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 14)
-                                        .stroke(Color.gray.opacity(0.25), lineWidth: 1)
-                                )
-                                .clipShape(RoundedRectangle(cornerRadius: 14))
+                            ZStack(alignment: .topLeading) {
+                                if reviewText.isEmpty {
+                                    Text("Share your experience...")
+                                        .foregroundStyle(.gray)
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 14)
+                                }
+
+                                TextEditor(text: $reviewText)
+                                    .frame(height: 130)
+                                    .padding(10)
+                                    .background(Color.clear)
+                            }
+                            .background(Color(.systemGray6))
+                            .clipShape(RoundedRectangle(cornerRadius: 18))
                         }
 
                         Button(action: submitReview) {
@@ -140,80 +168,95 @@ struct RatingsReviewsView: View {
                                 ProgressView()
                                     .frame(maxWidth: .infinity)
                                     .padding()
-                                    .background(Color.black.opacity(0.85))
+                                    .background(Color.pink)
                                     .foregroundColor(.white)
-                                    .cornerRadius(14)
+                                    .clipShape(RoundedRectangle(cornerRadius: 18))
                             } else {
                                 Text("Submit Review")
                                     .font(.headline)
                                     .foregroundColor(.white)
                                     .frame(maxWidth: .infinity)
                                     .padding()
-                                    .background(Color.black.opacity(0.85))
-                                    .cornerRadius(14)
+                                    .background(Color.pink)
+                                    .clipShape(RoundedRectangle(cornerRadius: 18))
                             }
                         }
                         .disabled(rating == 0 || reviewText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSubmitting)
                         .opacity((rating == 0 || reviewText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSubmitting) ? 0.6 : 1)
                     }
+                    .padding(20)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 24))
+                    .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 4)
                 }
 
-                Divider()
-                    .padding(.top, 4)
-
-                // Previous Reviews header
+                // Reviews Header
                 HStack {
-                    Text("Previous Reviews")
+                    Text("Client Reviews")
                         .font(.title3)
-                        .bold()
+                        .fontWeight(.bold)
 
                     Spacer()
 
-                    Text("\(reviews.count) review\(reviews.count == 1 ? "" : "s")")
-                        .foregroundColor(.secondary)
+                    Text("\(reviews.count)")
                         .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.pink)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.pink.opacity(0.12))
+                        .clipShape(Capsule())
                 }
 
                 if isLoading {
-                    ProgressView("Loading reviews...")
-                        .padding(.top, 20)
-                        .frame(maxWidth: .infinity)
+                    VStack(spacing: 12) {
+                        ProgressView()
+                        Text("Loading reviews...")
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 30)
                 } else if reviews.isEmpty {
-                    VStack(spacing: 10) {
-                        Image(systemName: "text.bubble")
-                            .font(.system(size: 32))
-                            .foregroundColor(.gray.opacity(0.6))
+                    VStack(spacing: 12) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.pink.opacity(0.12))
+                                .frame(width: 68, height: 68)
+
+                            Image(systemName: "text.bubble")
+                                .font(.system(size: 28))
+                                .foregroundStyle(.pink)
+                        }
 
                         Text("No reviews yet")
                             .font(.headline)
-                            .foregroundColor(.secondary)
 
-                        Text("Be the first to leave feedback.")
+                        Text("Be the first to share your experience.")
                             .font(.subheadline)
-                            .foregroundColor(.gray)
+                            .foregroundStyle(.secondary)
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 40)
+                    .padding(.vertical, 36)
                 } else {
-                    VStack(spacing: 14) {
+                    VStack(spacing: 16) {
                         ForEach(reviews) { review in
-                            ReviewCard(review: review)
+                            ProfessionalReviewCard(review: review)
                         }
                     }
                 }
 
                 if let errorMessage {
                     Text(errorMessage)
-                        .foregroundColor(.red)
                         .font(.footnote)
-                        .padding(.top, 10)
+                        .foregroundStyle(.red)
+                        .padding(.top, 8)
                 }
 
-                Spacer(minLength: 20)
+                Spacer(minLength: 24)
             }
             .padding(20)
         }
-        .background(Color(red: 1.0, green: 0.97, blue: 0.99))
+        .background(Color(red: 1.0, green: 0.97, blue: 0.99).ignoresSafeArea())
         .navigationBarBackButtonHidden(true)
         .navigationBarHidden(true)
         .onAppear {
@@ -223,45 +266,38 @@ struct RatingsReviewsView: View {
         }
     }
 
-    // MARK: - Fetch Current User Role
+    // MARK: - Firestore
     private func fetchCurrentUserRole() {
         guard let uid = currentUserID else {
             currentUserRole = nil
             return
         }
 
-        let db = Firestore.firestore()
+        Firestore.firestore()
+            .collection("users")
+            .document(uid)
+            .getDocument { doc, error in
+                if let error = error {
+                    print("❌ Failed to fetch role:", error.localizedDescription)
+                    return
+                }
 
-        db.collection("users").document(uid).getDocument { doc, error in
-            if let error = error {
-                print("❌ Failed to fetch role:", error.localizedDescription)
-                return
+                guard let data = doc?.data() else { return }
+                currentUserRole = (data["role"] as? String)?.lowercased()
             }
-
-            guard let data = doc?.data() else {
-                print("⚠️ No user doc found for role check")
-                return
-            }
-
-            let role = (data["role"] as? String)?.lowercased()
-            currentUserRole = role
-        }
     }
 
-    // MARK: - Fetch Reviews (NO INDEX REQUIRED)
     private func fetchReviews() {
         isLoading = true
         errorMessage = nil
 
-        let db = Firestore.firestore()
-
-        db.collection("reviews")
+        Firestore.firestore()
+            .collection("reviews")
             .whereField("proUserID", isEqualTo: proUserID)
             .getDocuments { snapshot, error in
                 isLoading = false
 
                 if let error = error {
-                    print("❌ Fetch reviews error:", error.localizedDescription)
                     errorMessage = error.localizedDescription
                     return
                 }
@@ -280,9 +316,7 @@ struct RatingsReviewsView: View {
                         let reviewerName = data["reviewerName"] as? String,
                         let text = data["text"] as? String,
                         let timestamp = data["date"] as? Timestamp
-                    else {
-                        return nil
-                    }
+                    else { return nil }
 
                     let ratingValue = data["rating"]
                     let rating: Int
@@ -306,12 +340,10 @@ struct RatingsReviewsView: View {
                     )
                 }
 
-                // Sort newest first locally
                 reviews.sort { $0.date > $1.date }
             }
     }
 
-    // MARK: - Submit Review
     private func submitReview() {
         guard rating > 0 else {
             errorMessage = "Please select a rating."
@@ -333,66 +365,77 @@ struct RatingsReviewsView: View {
         isSubmitting = true
         errorMessage = nil
 
-        let db = Firestore.firestore()
-
-        db.collection("users").document(user.uid).getDocument { userDoc, error in
-            if let error = error {
-                isSubmitting = false
-                errorMessage = "Failed to fetch user info: \(error.localizedDescription)"
-                return
-            }
-
-            let userData = userDoc?.data()
-
-            let reviewerName =
-                (userData?["fullName"] as? String) ??
-                (user.displayName) ??
-                "Client"
-
-            let reviewData: [String: Any] = [
-                "proUserID": proUserID,
-                "reviewerID": user.uid,
-                "reviewerName": reviewerName,
-                "rating": rating,
-                "text": trimmedText,
-                "date": Timestamp(date: Date())
-            ]
-
-            db.collection("reviews").addDocument(data: reviewData) { error in
-                isSubmitting = false
-
+        Firestore.firestore()
+            .collection("users")
+            .document(user.uid)
+            .getDocument { userDoc, error in
                 if let error = error {
-                    print("❌ Submit review error:", error.localizedDescription)
-                    errorMessage = error.localizedDescription
+                    isSubmitting = false
+                    errorMessage = "Failed to fetch user info: \(error.localizedDescription)"
                     return
                 }
 
-                reviewText = ""
-                rating = 0
-                fetchReviews()
+                let userData = userDoc?.data()
+
+                let reviewerName =
+                    (userData?["fullName"] as? String) ??
+                    (user.displayName) ??
+                    "Client"
+
+                let reviewData: [String: Any] = [
+                    "proUserID": proUserID,
+                    "reviewerID": user.uid,
+                    "reviewerName": reviewerName,
+                    "rating": rating,
+                    "text": trimmedText,
+                    "date": Timestamp(date: Date())
+                ]
+
+                Firestore.firestore()
+                    .collection("reviews")
+                    .addDocument(data: reviewData) { error in
+                        isSubmitting = false
+
+                        if let error = error {
+                            errorMessage = error.localizedDescription
+                            return
+                        }
+
+                        reviewText = ""
+                        rating = 0
+                        fetchReviews()
+                    }
             }
-        }
     }
 }
 
-struct ReviewCard: View {
+struct ProfessionalReviewCard: View {
     let review: Review
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .top, spacing: 12) {
-                Image(systemName: "person.crop.circle.fill")
-                    .font(.system(size: 40))
-                    .foregroundColor(.gray.opacity(0.7))
+                ZStack {
+                    Circle()
+                        .fill(Color.pink.opacity(0.12))
+                        .frame(width: 48, height: 48)
+
+                    Text(initials(from: review.reviewerName))
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.pink)
+                }
 
                 VStack(alignment: .leading, spacing: 6) {
                     HStack {
                         Text(review.reviewerName)
                             .font(.headline)
 
+                        Spacer()
+
                         Text(relativeDateString(from: review.date))
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
 
                     HStack(spacing: 3) {
@@ -403,28 +446,29 @@ struct ReviewCard: View {
                         }
                     }
                 }
-
-                Spacer()
             }
 
             Text(review.text)
                 .font(.body)
-                .foregroundColor(.primary)
+                .foregroundStyle(.primary)
+                .lineSpacing(4)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(16)
+        .padding(18)
         .background(Color.white)
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.gray.opacity(0.12), lineWidth: 1)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: .black.opacity(0.03), radius: 6, x: 0, y: 3)
+        .clipShape(RoundedRectangle(cornerRadius: 22))
+        .shadow(color: .black.opacity(0.04), radius: 8, x: 0, y: 4)
+    }
+
+    private func initials(from name: String) -> String {
+        let parts = name.split(separator: " ")
+        let initials = parts.prefix(2).compactMap { $0.first }
+        return String(initials)
     }
 
     private func relativeDateString(from date: Date) -> String {
         let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .full
+        formatter.unitsStyle = .short
         return formatter.localizedString(for: date, relativeTo: Date())
     }
 }

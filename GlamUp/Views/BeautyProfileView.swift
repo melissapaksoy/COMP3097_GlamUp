@@ -13,7 +13,9 @@ struct BeautyProfileView: View {
     @State private var totalReviews: Int? = nil
     @State private var isLoadingReviews = false
 
-    // Local gallery images (add these to Assets.xcassets)
+    @State private var canNavigateToBooking = false
+    @State private var goToBooking = false
+
     private let galleryImageNames: [String] = [
         "gallery01", "gallery02", "gallery03",
         "gallery04", "gallery05", "gallery06"
@@ -138,37 +140,50 @@ struct BeautyProfileView: View {
                 }
 
                 // Action buttons
-                NavigationLink {
-                    BookingAppointmentView(
-                        proName: proName,
-                        proUserID: proUserID,
-                        isBeautyPro: false
-                    )
-                } label: {
-                    PrimaryButton(title: "BOOK APPOINTMENT")
-                }
-                .buttonStyle(.plain)
+                VStack(spacing: 12) {
+                    Button {
+                        guard canNavigateToBooking else { return }
 
-                NavigationLink {
-                    RatingsReviewsView(
-                        proName: proName,
-                        proUserID: proUserID
-                    )
-                } label: {
-                    SecondaryButton(title: "Ratings & Reviews")
-                        
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                            goToBooking = true
+                        }
+                    } label: {
+                        PrimaryButton(title: "BOOK APPOINTMENT")
+                            .opacity(canNavigateToBooking ? 1 : 0.7)
+                    }
+                    .buttonStyle(.plain)
+
+                    NavigationLink {
+                        RatingsReviewsView(
+                            proName: proName,
+                            proUserID: proUserID
+                        )
+                    } label: {
+                        SecondaryButton(title: "Ratings & Reviews")
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
 
                 Spacer(minLength: 10)
             }
             .padding(20)
             .onAppear {
                 fetchReviews()
+
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                    canNavigateToBooking = true
+                }
             }
         }
         .navigationBarHidden(true)
         .background(Color(red: 1.0, green: 0.97, blue: 0.99))
+        .navigationDestination(isPresented: $goToBooking) {
+            BookingAppointmentView(
+                proName: proName,
+                proUserID: proUserID,
+                isBeautyPro: false
+            )
+        }
     }
 
     private func fetchReviews() {
@@ -248,9 +263,9 @@ private func SectionHeader(_ text: String) -> some View {
 #Preview {
     NavigationStack {
         BeautyProfileView(
-            proUserID: "dummyProUserID123",
+            proUserID: "pro_003",
             proName: "Sophia Martinez",
-            proRole: "Nail Artist"
+            proRole: "Makeup Artist"
         )
     }
 }

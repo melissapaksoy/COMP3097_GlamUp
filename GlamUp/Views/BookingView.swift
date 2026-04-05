@@ -14,64 +14,80 @@ struct BookingAppointmentView: View {
     ]
 
     @State private var selectedService = "💅 Gel Manicure - $35"
-
-    // ✅ blocks past dates
     @State private var selectedDate = Date()
-
-    private let slots = ["10:00 AM", "1:00 PM", "3:00 PM", "5:00 PM"]
     @State private var selectedTime: String? = nil
-
     @State private var goToConfirm = false
 
+    private let slots = ["10:00 AM", "1:00 PM", "3:00 PM", "5:00 PM"]
+
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
 
-                    HStack {
-                        BackPillButton { dismiss() }
-                        Spacer()
-                    }
+                HStack {
+                    BackPillButton { dismiss() }
+                    Spacer()
+                }
 
+                VStack(alignment: .leading, spacing: 4) {
                     Text("Book an Appointment")
-                        .font(.title2).bold()
+                        .font(.title2)
+                        .bold()
                         .foregroundStyle(.pink)
 
                     Text("With \(proName)")
                         .foregroundStyle(.secondary)
+                }
 
-                    // Service
-                    Text("Select Service").font(.headline).foregroundStyle(.pink)
+                // Service
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Select Service")
+                        .font(.headline)
+                        .foregroundStyle(.pink)
+
                     Picker("Select Service", selection: $selectedService) {
-                        ForEach(services, id: \.self) { Text($0).tag($0) }
+                        ForEach(services, id: \.self) { service in
+                            Text(service).tag(service)
+                        }
                     }
                     .pickerStyle(.menu)
                     .padding()
                     .background(Color(.systemGray6))
                     .clipShape(RoundedRectangle(cornerRadius: 14))
+                }
 
-                    // Date
-                    Text("Select Date").font(.headline).foregroundStyle(.pink)
+                // Date
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Select Date")
+                        .font(.headline)
+                        .foregroundStyle(.pink)
+
                     DatePicker(
                         "Choose Date",
                         selection: $selectedDate,
-                        in: Date()..., // ✅ cannot choose previous dates
+                        in: Date()...,
                         displayedComponents: .date
                     )
                     .datePickerStyle(.compact)
                     .padding()
                     .background(Color(.systemGray6))
                     .clipShape(RoundedRectangle(cornerRadius: 14))
+                }
 
-                    // Time slots
-                    Text("Select Time").font(.headline).foregroundStyle(.pink)
+                // Time slots
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Select Time")
+                        .font(.headline)
+                        .foregroundStyle(.pink)
+
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 110), spacing: 10)], spacing: 10) {
                         ForEach(slots, id: \.self) { slot in
                             Button {
                                 selectedTime = slot
                             } label: {
                                 Text(slot)
-                                    .font(.subheadline).bold()
+                                    .font(.subheadline)
+                                    .bold()
                                     .foregroundStyle(selectedTime == slot ? .white : .primary)
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 12)
@@ -83,35 +99,37 @@ struct BookingAppointmentView: View {
                             .buttonStyle(.plain)
                         }
                     }
-
-                    // Confirm (nav only)
-                    Button {
-                        goToConfirm = true
-                    } label: {
-                        PrimaryButton(title: "Confirm Booking")
-                    }
-                    .disabled(selectedTime == nil)
-                    .opacity(selectedTime == nil ? 0.6 : 1.0)
-
-                    NavigationLink(
-                        destination: BookingConfirmationViewSwiftUI(
-                            service: selectedService,
-                            date: selectedDate,
-                            time: selectedTime ?? "—"
-                        ),
-                        isActive: $goToConfirm
-                    ) { EmptyView() }
                 }
-                .padding(20)
+
+                // Confirm
+                Button {
+                    goToConfirm = true
+                } label: {
+                    PrimaryButton(title: "Confirm Booking")
+                }
+                .disabled(selectedTime == nil)
+                .opacity(selectedTime == nil ? 0.6 : 1.0)
+
+                Spacer(minLength: 12)
             }
-            .navigationBarHidden(true)
-            .background(Color(red: 1.0, green: 0.97, blue: 0.99))
+            .padding(20)
+        }
+        .navigationBarBackButtonHidden(true)
+        .navigationBarHidden(true)
+        .background(Color(red: 1.0, green: 0.97, blue: 0.99))
+        .navigationDestination(isPresented: $goToConfirm) {
+            BookingConfirmationViewSwiftUI(
+                service: selectedService,
+                date: selectedDate,
+                time: selectedTime ?? "—"
+            )
         }
     }
 }
 
 struct BookingConfirmationViewSwiftUI: View {
     @Environment(\.dismiss) private var dismiss
+
     let service: String
     let date: Date
     let time: String
@@ -123,7 +141,7 @@ struct BookingConfirmationViewSwiftUI: View {
     }
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 20) {
             HStack {
                 BackPillButton {
                     dismiss()
@@ -131,32 +149,54 @@ struct BookingConfirmationViewSwiftUI: View {
                 Spacer()
             }
 
+            Spacer().frame(height: 10)
+
             Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 70))
+                .font(.system(size: 72))
                 .foregroundStyle(.pink)
 
             Text("Booking Confirmed!")
-                .font(.title2).bold()
+                .font(.title2)
+                .bold()
 
-            Text("Service: \(service)\nDate: \(dateText)\nTime: \(time)")
-                .multilineTextAlignment(.center)
-                .padding()
-                .background(Color(.systemGray6))
-                .clipShape(RoundedRectangle(cornerRadius: 14))
-                .padding(.top, 12)
+            Text("Your Glam Session Awaits ✨")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
 
-            VStack(spacing: 20) {
-                NavigationLink(destination: HomeView()) {
-                    PrimaryButton(title: "BACK TO HOME")
-                        .frame(maxWidth: 260)
-                }
+            VStack(alignment: .leading, spacing: 14) {
+                confirmationRow(title: "Service", value: service)
+                confirmationRow(title: "Date", value: dateText)
+                confirmationRow(title: "Time", value: time)
             }
+            .padding(18)
+            .background(Color(.systemGray6))
+            .clipShape(RoundedRectangle(cornerRadius: 18))
 
             Spacer()
+
+            Button {
+                dismiss()
+            } label: {
+                PrimaryButton(title: "BACK")
+            }
         }
         .padding(20)
+        .navigationBarBackButtonHidden(true)
         .navigationBarHidden(true)
         .background(Color(red: 1.0, green: 0.97, blue: 0.99))
     }
-}
 
+    @ViewBuilder
+    private func confirmationRow(title: String, value: String) -> some View {
+        HStack {
+            Text(title)
+                .fontWeight(.semibold)
+                .foregroundStyle(.pink)
+
+            Spacer()
+
+            Text(value)
+                .multilineTextAlignment(.trailing)
+        }
+    }
+}

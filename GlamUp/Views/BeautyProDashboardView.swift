@@ -53,13 +53,11 @@ struct BeautyProDashboardView: View {
                     QuickActionCard(title: "Portfolio", systemImage: "photo.on.rectangle.angled") {
                         toast("Portfolio Management (UI only)")
                     }
-
-                    NavigationLink {
-                        RatingsReviewsView(proName: authVM.currentUser?.displayName ?? "You", proUserID: authVM.currentUser?.uid ?? "")
-                    } label: {
-                        QuickActionCardContent(title: "Client Reviews", systemImage: "star.bubble")
+                    QuickActionCard(title: "Ratings & Reviews", systemImage: "star.bubble") {
+                        toast("Ratings & Reviews (UI only)")
                     }
-                    .buttonStyle(.plain)
+
+                    
                 }
 
                 Text("New Requests")
