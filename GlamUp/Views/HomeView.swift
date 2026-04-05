@@ -19,58 +19,28 @@ struct HomeView: View {
     @State private var selectedPriceSort: String = "None"
     @State private var selectedRatingFilter: String = "All"
 
-    // Dynamic ratings
+    @State private var professionals: [Professional] = []
     @State private var ratingsMap: [String: Double] = [:]
+    @State private var isLoading = false
 
-    private let professionals: [Professional] = [
-        .init(id: "pro_001", name: "Maria Rodriguez", role: "Nail Artist", rating: 4.8, priceFrom: 45),
-        .init(id: "pro_002", name: "Alex Morgan", role: "Hair Stylist", rating: 4.9, priceFrom: 60),
-        .init(id: "pro_003", name: "Sophia Martinez", role: "Makeup Artist", rating: 4.7, priceFrom: 50),
-        .init(id: "pro_004", name: "Daniel Kim", role: "Barber", rating: 4.6, priceFrom: 35),
-        .init(id: "pro_005", name: "Emily Chen", role: "Esthetician", rating: 4.8, priceFrom: 55)
-    ]
-
-    private let serviceOptions = [
-        "All",
-        "Nail Artist",
-        "Hair Stylist",
-        "Makeup Artist",
-        "Barber",
-        "Esthetician"
-    ]
-
-    private let priceOptions = [
-        "None",
-        "Low to High",
-        "High to Low"
-    ]
-
-    private let ratingOptions = [
-        "All",
-        "4.5+",
-        "4.0+",
-        "3.5+",
-        "3.0+"
-    ]
+    private let serviceOptions = ["All", "Nail Artist", "Hair Stylist", "Makeup Artist", "Barber", "Esthetician", "Lash Technician", "Brow Artist"]
+    private let priceOptions = ["None", "Low to High", "High to Low"]
+    private let ratingOptions = ["All", "4.5+", "4.0+", "3.5+", "3.0+"]
 
     private var filteredProfessionals: [Professional] {
         var result = professionals
 
-        // 🔍 Search
         let trimmed = searchText.lowercased()
         if !trimmed.isEmpty {
             result = result.filter {
-                $0.name.lowercased().contains(trimmed) ||
-                $0.role.lowercased().contains(trimmed)
+                $0.name.lowercased().contains(trimmed) || $0.role.lowercased().contains(trimmed)
             }
         }
 
-        // 🎯 Service filter
         if selectedService != "All" {
             result = result.filter { $0.role == selectedService }
         }
 
-        // ⭐ Rating range filter
         if selectedRatingFilter != "All" {
             let minRating: Double
             switch selectedRatingFilter {
@@ -80,13 +50,9 @@ struct HomeView: View {
             case "3.0+": minRating = 3.0
             default: minRating = 0
             }
-
-            result = result.filter {
-                (ratingsMap[$0.id] ?? $0.rating) >= minRating
-            }
+            result = result.filter { (ratingsMap[$0.id] ?? $0.rating) >= minRating }
         }
 
-        // 💲 Price sort
         if selectedPriceSort == "Low to High" {
             result.sort { $0.priceFrom < $1.priceFrom }
         } else if selectedPriceSort == "High to Low" {
@@ -101,12 +67,9 @@ struct HomeView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 18) {
 
-
-                    // 🔍 SEARCH BAR
+                    // Search bar
                     HStack(spacing: 10) {
-                        Image(systemName: "magnifyingglass")
-                            .foregroundStyle(.secondary)
-
+                        Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
                         TextField("Search services or professionals...", text: $searchText)
                             .font(.subheadline)
                     }
@@ -117,71 +80,65 @@ struct HomeView: View {
                     .shadow(color: .black.opacity(0.04), radius: 6, x: 0, y: 3)
                     .padding(.horizontal)
 
-                    // 🎯 FILTER DROPDOWNS
+                    // Filter dropdowns
                     HStack(spacing: 10) {
                         Menu {
-                            ForEach(priceOptions, id: \.self) { option in
-                                Button(option) {
-                                    selectedPriceSort = option
-                                }
-                            }
+                            ForEach(priceOptions, id: \.self) { Button($0) { selectedPriceSort = $0 } }
                         } label: {
-                            SlimFilterDropdownButton(
-                                title: "Price",
-                                isActive: selectedPriceSort != "None"
-                            )
+                            SlimFilterDropdownButton(title: "Price", isActive: selectedPriceSort != "None")
                         }
                         .frame(maxWidth: .infinity)
 
                         Menu {
-                            ForEach(serviceOptions, id: \.self) { option in
-                                Button(option) {
-                                    selectedService = option
-                                }
-                            }
+                            ForEach(serviceOptions, id: \.self) { Button($0) { selectedService = $0 } }
                         } label: {
-                            SlimFilterDropdownButton(
-                                title: "Service",
-                                isActive: selectedService != "All"
-                            )
+                            SlimFilterDropdownButton(title: "Service", isActive: selectedService != "All")
                         }
                         .frame(maxWidth: .infinity)
 
                         Menu {
-                            ForEach(ratingOptions, id: \.self) { option in
-                                Button(option) {
-                                    selectedRatingFilter = option
-                                }
-                            }
+                            ForEach(ratingOptions, id: \.self) { Button($0) { selectedRatingFilter = $0 } }
                         } label: {
-                            SlimFilterDropdownButton(
-                                title: "Ratings",
-                                isActive: selectedRatingFilter != "All"
-                            )
+                            SlimFilterDropdownButton(title: "Ratings", isActive: selectedRatingFilter != "All")
                         }
                         .frame(maxWidth: .infinity)
                     }
                     .padding(.horizontal)
 
-                    // MAP
+                    // Map
                     Map(position: $cameraPosition)
                         .frame(height: 180)
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                         .padding(.horizontal)
 
-                    // PROFESSIONAL LIST
-                    ForEach(filteredProfessionals) { pro in
-                        Button {
-                            selectedProfessional = pro
-                        } label: {
-                            ProCardRow(
-                                name: pro.name,
-                                role: pro.role,
-                                rating: ratingsMap[pro.id] ?? pro.rating,
-                                priceFrom: pro.priceFrom
-                            )
+                    // Professional list
+                    if isLoading {
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 40)
+                    } else if filteredProfessionals.isEmpty {
+                        VStack(spacing: 12) {
+                            Image(systemName: "person.slash")
+                                .font(.system(size: 36))
+                                .foregroundStyle(.pink.opacity(0.4))
+                            Text(professionals.isEmpty ? "No professionals yet" : "No results found")
+                                .foregroundStyle(.secondary)
                         }
-                        .buttonStyle(.plain)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 40)
+                    } else {
+                        ForEach(filteredProfessionals) { pro in
+                            Button { selectedProfessional = pro } label: {
+                                ProCardRow(
+                                    name: pro.name,
+                                    role: pro.role,
+                                    rating: ratingsMap[pro.id] ?? pro.rating,
+                                    priceFrom: pro.priceFrom,
+                                    profileImageBase64: pro.profileImageBase64
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
 
                     Spacer(minLength: 16)
@@ -192,42 +149,59 @@ struct HomeView: View {
         .navigationTitle("Explore")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button("Logout") {
-                    authVM.signOut()
-                }
-                .foregroundStyle(.pink)
+                Button("Logout") { authVM.signOut() }
+                    .foregroundStyle(.pink)
             }
         }
         .navigationDestination(item: $selectedProfessional) { pro in
-            BeautyProfileView(
-                proUserID: pro.id,
-                proName: pro.name,
-                proRole: pro.role
-            )
+            BeautyProfileView(proUserID: pro.id, proName: pro.name, proRole: pro.role)
         }
-        .onAppear {
-            fetchRatings()
-        }
+        .onAppear { fetchProfessionals() }
         .background(Color(red: 1.0, green: 0.97, blue: 0.99))
     }
 
-    // MARK: Firestore Ratings
+    // MARK: - Firestore
+
+    private func fetchProfessionals() {
+        isLoading = true
+
+        Firestore.firestore()
+            .collection("users")
+            .whereField("role", isEqualTo: "beautyPro")
+            .getDocuments { snapshot, _ in
+                isLoading = false
+                let docs = snapshot?.documents ?? []
+
+                professionals = docs.compactMap { doc in
+                    let data = doc.data()
+                    guard let name = data["fullName"] as? String, !name.isEmpty else { return nil }
+                    return Professional(
+                        id: doc.documentID,
+                        name: name,
+                        role: data["specialty"] as? String ?? "Beauty Pro",
+                        rating: 0.0,
+                        priceFrom: data["priceFrom"] as? Double ?? 0,
+                        profileImageBase64: data["profileImageBase64"] as? String
+                    )
+                }
+
+                fetchRatings()
+            }
+    }
+
     private func fetchRatings() {
         let db = Firestore.firestore()
-
         for pro in professionals {
             db.collection("reviews")
                 .whereField("proUserID", isEqualTo: pro.id)
                 .getDocuments { snapshot, _ in
                     guard let docs = snapshot?.documents else { return }
-
                     let ratings = docs.compactMap { doc -> Double? in
                         let val = doc["rating"]
                         if let d = val as? Double { return d }
                         if let i = val as? Int { return Double(i) }
                         return nil
                     }
-
                     if !ratings.isEmpty {
                         ratingsMap[pro.id] = ratings.reduce(0, +) / Double(ratings.count)
                     }
@@ -236,81 +210,89 @@ struct HomeView: View {
     }
 }
 
+// MARK: - Models
+
 struct Professional: Identifiable, Hashable {
     let id: String
     let name: String
     let role: String
     let rating: Double
     let priceFrom: Double
+    let profileImageBase64: String?
+
+    func hash(into hasher: inout Hasher) { hasher.combine(id) }
+    static func == (lhs: Professional, rhs: Professional) -> Bool { lhs.id == rhs.id }
 }
 
-// MARK: - SLIM FILTER BUTTON
+// MARK: - Filter button
+
 struct SlimFilterDropdownButton: View {
     let title: String
     let isActive: Bool
 
     var body: some View {
         HStack(spacing: 5) {
-            Text(title)
-                .font(.subheadline)
-                .fontWeight(.medium)
-                .lineLimit(1)
-
-            Image(systemName: "chevron.down")
-                .font(.system(size: 10, weight: .semibold))
+            Text(title).font(.subheadline).fontWeight(.medium).lineLimit(1)
+            Image(systemName: "chevron.down").font(.system(size: 10, weight: .semibold))
         }
         .foregroundColor(isActive ? .white : .pink)
         .frame(maxWidth: .infinity)
         .padding(.vertical, 11)
         .background(isActive ? Color.pink : Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(Color.pink.opacity(isActive ? 0 : 0.18), lineWidth: 1)
-        )
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.pink.opacity(isActive ? 0 : 0.18), lineWidth: 1))
         .shadow(color: .black.opacity(0.03), radius: 4, x: 0, y: 2)
         .animation(.easeInOut(duration: 0.18), value: isActive)
     }
 }
 
-// MARK: - PROFESSIONAL CARD
+// MARK: - Professional card
+
 struct ProCardRow: View {
     let name: String
     let role: String
     let rating: Double
     let priceFrom: Double
+    let profileImageBase64: String?
 
     var body: some View {
         HStack(spacing: 14) {
-            Circle()
-                .fill(Color.pink.opacity(0.18))
-                .frame(width: 56, height: 56)
-                .overlay(
-                    Text(String(name.prefix(1)))
-                        .font(.title3)
-                        .fontWeight(.bold)
-                        .foregroundColor(.pink)
-                )
+            // Avatar
+            Group {
+                if let base64 = profileImageBase64,
+                   let data = Data(base64Encoded: base64),
+                   let img = UIImage(data: data) {
+                    Image(uiImage: img)
+                        .resizable()
+                        .scaledToFill()
+                } else {
+                    Circle()
+                        .fill(Color.pink.opacity(0.18))
+                        .overlay(
+                            Text(String(name.prefix(1)))
+                                .font(.title3).fontWeight(.bold).foregroundColor(.pink)
+                        )
+                }
+            }
+            .frame(width: 56, height: 56)
+            .clipShape(Circle())
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(name)
-                    .font(.headline)
-
-                Text(role)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-
-                Text("★ \(rating, specifier: "%.1f")")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+                Text(name).font(.headline)
+                Text(role).font(.subheadline).foregroundColor(.secondary)
+                if rating > 0 {
+                    Text("★ \(rating, specifier: "%.1f")").font(.subheadline).foregroundColor(.secondary)
+                } else {
+                    Text("New").font(.subheadline).foregroundColor(.secondary)
+                }
             }
 
             Spacer()
 
-            Text("From $\(Int(priceFrom))")
-                .foregroundColor(.pink)
-                .fontWeight(.bold)
-                .font(.subheadline)
+            if priceFrom > 0 {
+                Text("From $\(Int(priceFrom))")
+                    .foregroundColor(.pink).fontWeight(.bold).font(.subheadline)
+            }
         }
         .padding()
         .background(Color.white)
