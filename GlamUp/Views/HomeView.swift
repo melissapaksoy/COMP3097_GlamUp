@@ -54,6 +54,7 @@ struct HomeView: View {
                     ForEach(Array(professionals.enumerated()), id: \.offset) { _, pro in
                         NavigationLink {
                             BeautyProfileView(
+                                proUserID: pro.name.replacingOccurrences(of: " ", with: "").lowercased(),
                                 proName: pro.name,
                                 proRole: pro.role
                             )
@@ -183,3 +184,4 @@ struct ProCardRow: View {
             .environmentObject(AuthViewModel())
     }
 }
+

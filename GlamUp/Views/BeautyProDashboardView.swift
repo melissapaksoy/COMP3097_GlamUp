@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import FirebaseAuth
 
 struct BeautyProDashboardView: View {
     @EnvironmentObject private var authVM: AuthViewModel
@@ -54,7 +55,7 @@ struct BeautyProDashboardView: View {
                     }
 
                     NavigationLink {
-                        RatingsReviewsView()
+                        RatingsReviewsView(proName: authVM.currentUser?.displayName ?? "You", proUserID: authVM.currentUser?.uid ?? "")
                     } label: {
                         QuickActionCardContent(title: "Client Reviews", systemImage: "star.bubble")
                     }

@@ -1,12 +1,17 @@
 import SwiftUI
+import FirebaseFirestore
 
 struct BeautyProfileView: View {
     @Environment(\.dismiss) private var dismiss
 
+    let proUserID: String
     let proName: String
     let proRole: String
 
     @State private var selectedSlot: String? = nil
+    @State private var averageRating: Double? = nil
+    @State private var totalReviews: Int? = nil
+    @State private var isLoadingReviews = false
 
     // Local gallery images (add these to Assets.xcassets)
     private let galleryImageNames: [String] = [
@@ -37,6 +42,7 @@ struct BeautyProfileView: View {
                         Circle()
                             .fill(Color.white.opacity(0.9))
                             .frame(width: 72, height: 72)
+
                         Image(systemName: "person.crop.circle.fill")
                             .font(.system(size: 54))
                             .foregroundStyle(.pink)
@@ -44,17 +50,30 @@ struct BeautyProfileView: View {
 
                     VStack(alignment: .leading, spacing: 4) {
                         Text(proName)
-                            .font(.title3).bold()
+                            .font(.title3)
+                            .bold()
                             .foregroundStyle(.white)
 
                         Text(proRole)
                             .foregroundStyle(Color.white.opacity(0.9))
                             .font(.subheadline)
 
-                        Text("⭐ 4.8 (120 reviews)")
-                            .foregroundStyle(.white)
-                            .font(.subheadline)
-                            .padding(.top, 2)
+                        Group {
+                            if isLoadingReviews {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            } else {
+                                if let avg = averageRating, let total = totalReviews, total > 0 {
+                                    Text("⭐ \(String(format: "%.1f", avg)) (\(total) reviews)")
+                                        .foregroundStyle(.white)
+                                } else {
+                                    Text("No reviews yet")
+                                        .foregroundStyle(.white.opacity(0.8))
+                                }
+                            }
+                        }
+                        .font(.subheadline)
+                        .padding(.top, 2)
                     }
 
                     Spacer()
@@ -91,7 +110,8 @@ struct BeautyProfileView: View {
                             selectedSlot = slot
                         } label: {
                             Text(slot)
-                                .font(.subheadline).bold()
+                                .font(.subheadline)
+                                .bold()
                                 .foregroundStyle(selectedSlot == slot ? .white : .primary)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 12)
@@ -104,7 +124,7 @@ struct BeautyProfileView: View {
                     }
                 }
 
-                // Gallery (dummy thumbnails)
+                // Gallery
                 SectionHeader("Gallery")
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
                     ForEach(galleryImageNames, id: \.self) { name in
@@ -119,23 +139,74 @@ struct BeautyProfileView: View {
 
                 // Action buttons
                 NavigationLink {
-                    BookingAppointmentView(proName: proName)
+                    BookingAppointmentView(
+                        proName: proName,
+                        proUserID: proUserID,
+                        isBeautyPro: false
+                    )
                 } label: {
                     PrimaryButton(title: "BOOK APPOINTMENT")
                 }
+                .buttonStyle(.plain)
 
                 NavigationLink {
-                    RatingsReviewsView()
+                    RatingsReviewsView(
+                        proName: proName,
+                        proUserID: proUserID
+                    )
                 } label: {
-                    SecondaryButton(title: "RATINGS & REVIEWS")
+                    SecondaryButton(title: "Ratings & Reviews")
+                        
                 }
+                .buttonStyle(.plain)
 
                 Spacer(minLength: 10)
             }
             .padding(20)
+            .onAppear {
+                fetchReviews()
+            }
         }
         .navigationBarHidden(true)
         .background(Color(red: 1.0, green: 0.97, blue: 0.99))
+    }
+
+    private func fetchReviews() {
+        isLoadingReviews = true
+        let db = Firestore.firestore()
+        let reviewsRef = db.collection("reviews")
+            .whereField("proUserID", isEqualTo: proUserID)
+
+        reviewsRef.getDocuments { snapshot, error in
+            defer { isLoadingReviews = false }
+
+            guard error == nil, let documents = snapshot?.documents else {
+                averageRating = nil
+                totalReviews = nil
+                return
+            }
+
+            let ratings = documents.compactMap { doc -> Double? in
+                let ratingValue = doc.data()["rating"]
+
+                if let doubleRating = ratingValue as? Double {
+                    return doubleRating
+                } else if let intRating = ratingValue as? Int {
+                    return Double(intRating)
+                } else {
+                    return nil
+                }
+            }
+
+            totalReviews = ratings.count
+
+            if ratings.isEmpty {
+                averageRating = nil
+            } else {
+                let sum = ratings.reduce(0, +)
+                averageRating = sum / Double(ratings.count)
+            }
+        }
     }
 }
 
@@ -149,11 +220,19 @@ struct ServiceRowData: Identifiable {
 private func ServiceRow(_ s: ServiceRowData) -> some View {
     HStack {
         VStack(alignment: .leading, spacing: 2) {
-            Text(s.title).font(.headline)
-            Text(s.duration).font(.subheadline).foregroundStyle(.secondary)
+            Text(s.title)
+                .font(.headline)
+
+            Text(s.duration)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
         }
+
         Spacer()
-        Text(s.price).font(.headline).foregroundStyle(.pink)
+
+        Text(s.price)
+            .font(.headline)
+            .foregroundStyle(.pink)
     }
     .padding(12)
     .background(Color(.systemGray6))
@@ -168,7 +247,10 @@ private func SectionHeader(_ text: String) -> some View {
 
 #Preview {
     NavigationStack {
-        BeautyProfileView(proName: "Sophia Martinez", proRole: "Nail Artist")
+        BeautyProfileView(
+            proUserID: "dummyProUserID123",
+            proName: "Sophia Martinez",
+            proRole: "Nail Artist"
+        )
     }
 }
-

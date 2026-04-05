@@ -4,6 +4,8 @@ struct BookingAppointmentView: View {
     @Environment(\.dismiss) private var dismiss
 
     let proName: String
+    let proUserID: String
+    let isBeautyPro: Bool
 
     private let services = [
         "💅 Gel Manicure - $35",
@@ -123,7 +125,9 @@ struct BookingConfirmationViewSwiftUI: View {
     var body: some View {
         VStack(spacing: 16) {
             HStack {
-                BackPillButton { dismiss() }
+                BackPillButton {
+                    dismiss()
+                }
                 Spacer()
             }
 
@@ -155,3 +159,4 @@ struct BookingConfirmationViewSwiftUI: View {
         .background(Color(red: 1.0, green: 0.97, blue: 0.99))
     }
 }
+
