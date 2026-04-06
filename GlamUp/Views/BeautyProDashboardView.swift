@@ -23,11 +23,7 @@ struct BeautyProDashboardView: View {
         let time: String
     }
 
-    @State private var requests: [Request] = [
-        .init(name: "Lisa Chen", service: "Gel Manicure", time: "Today • 3:00 PM"),
-        .init(name: "Rachel Adams", service: "Hair Styling", time: "Tomorrow • 11:30 AM"),
-        .init(name: "Amira Patel", service: "Bridal Makeup", time: "Fri • 2:15 PM")
-    ]
+    @State private var requests: [Request] = []
 
     var body: some View {
         ScrollView {

@@ -25,11 +25,14 @@ struct BeautyProfileView: View {
     @State private var availability: [String: DayAvailability] = [:]
     @State private var isLoadingAvailability = false
 
+    // Portfolio
+    @State private var portfolioImages: [String] = []
+    @State private var isLoadingPortfolio = false
+
     // Booking
     @State private var canNavigateToBooking = false
     @State private var goToBooking = false
 
-    private let galleryImageNames = ["gallery01", "gallery02", "gallery03", "gallery04", "gallery05", "gallery06"]
     private let days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
     var body: some View {
@@ -146,16 +149,27 @@ struct BeautyProfileView: View {
                     }
                 }
 
-                // MARK: Gallery
-                SectionHeader("Gallery")
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
-                    ForEach(galleryImageNames, id: \.self) { name in
-                        Image(name)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(height: 100)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                            .clipped()
+                // MARK: Portfolio
+                SectionHeader("Portfolio")
+                if isLoadingPortfolio {
+                    ProgressView().frame(maxWidth: .infinity).padding()
+                } else if portfolioImages.isEmpty {
+                    Text("No portfolio photos yet.")
+                        .foregroundStyle(.secondary)
+                        .italic()
+                } else {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
+                        ForEach(Array(portfolioImages.enumerated()), id: \.offset) { _, base64 in
+                            if let data = Data(base64Encoded: base64),
+                               let img = UIImage(data: data) {
+                                Image(uiImage: img)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(height: 100)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                    .clipped()
+                            }
+                        }
                     }
                 }
 
@@ -186,6 +200,7 @@ struct BeautyProfileView: View {
                 fetchReviews()
                 fetchServices()
                 fetchAvailability()
+                fetchPortfolio()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { canNavigateToBooking = true }
             }
         }
@@ -256,6 +271,14 @@ struct BeautyProfileView: View {
                 }
             }
             availability = loaded
+        }
+    }
+
+    private func fetchPortfolio() {
+        isLoadingPortfolio = true
+        Firestore.firestore().collection("portfolios").document(proUserID).getDocument { doc, _ in
+            isLoadingPortfolio = false
+            portfolioImages = doc?.data()?["images"] as? [String] ?? []
         }
     }
 

@@ -83,21 +83,27 @@ struct HomeView: View {
                     // Filter dropdowns
                     HStack(spacing: 10) {
                         Menu {
-                            ForEach(priceOptions, id: \.self) { Button($0) { selectedPriceSort = $0 } }
+                            ForEach(priceOptions, id: \.self) { option in
+                                Button(option) { selectedPriceSort = option }
+                            }
                         } label: {
                             SlimFilterDropdownButton(title: "Price", isActive: selectedPriceSort != "None")
                         }
                         .frame(maxWidth: .infinity)
 
                         Menu {
-                            ForEach(serviceOptions, id: \.self) { Button($0) { selectedService = $0 } }
+                            ForEach(serviceOptions, id: \.self) { option in
+                                Button(option) { selectedService = option }
+                            }
                         } label: {
                             SlimFilterDropdownButton(title: "Service", isActive: selectedService != "All")
                         }
                         .frame(maxWidth: .infinity)
 
                         Menu {
-                            ForEach(ratingOptions, id: \.self) { Button($0) { selectedRatingFilter = $0 } }
+                            ForEach(ratingOptions, id: \.self) { option in
+                                Button(option) { selectedRatingFilter = option }
+                            }
                         } label: {
                             SlimFilterDropdownButton(title: "Ratings", isActive: selectedRatingFilter != "All")
                         }
@@ -174,10 +180,13 @@ struct HomeView: View {
 
                 professionals = docs.compactMap { doc in
                     let data = doc.data()
-                    guard let name = data["fullName"] as? String, !name.isEmpty else { return nil }
+                    let fullName = data["fullName"] as? String ?? ""
+                    let email = data["email"] as? String ?? ""
+                    let displayName = fullName.isEmpty ? email : fullName
+                    guard !displayName.isEmpty else { return nil }
                     return Professional(
                         id: doc.documentID,
-                        name: name,
+                        name: displayName,
                         role: data["specialty"] as? String ?? "Beauty Pro",
                         rating: 0.0,
                         priceFrom: data["priceFrom"] as? Double ?? 0,
