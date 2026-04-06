@@ -173,7 +173,7 @@ struct BeautyProDashboardView: View {
         guard let uid = Auth.auth().currentUser?.uid else { return }
         proUID = uid
 
-        Firestore.firestore().collection("users").document(uid).getDocument { doc, _ in
+        Firestore.firestore().collection("beautyProfessionals").document(uid).getDocument { doc, _ in
             guard let data = doc?.data() else { return }
             proName = data["fullName"] as? String ?? data["email"] as? String ?? "Beauty Pro"
             profileImageBase64 = data["profileImageBase64"] as? String

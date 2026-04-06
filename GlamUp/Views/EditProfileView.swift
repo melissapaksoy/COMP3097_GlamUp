@@ -181,7 +181,7 @@ struct EditProfileView: View {
     private func loadProfile() {
         guard let uid = Auth.auth().currentUser?.uid else { isLoading = false; return }
 
-        Firestore.firestore().collection("users").document(uid).getDocument { doc, _ in
+        Firestore.firestore().collection("beautyProfessionals").document(uid).getDocument { doc, _ in
             isLoading = false
             guard let data = doc?.data() else { return }
             fullName = data["fullName"] as? String ?? ""
@@ -194,6 +194,7 @@ struct EditProfileView: View {
 
     private func saveProfile() {
         guard let uid = Auth.auth().currentUser?.uid else { return }
+        guard let email = Auth.auth().currentUser?.email else { return }
         let trimmedName = fullName.trimmingCharacters(in: .whitespaces)
         guard !trimmedName.isEmpty else { return }
 
@@ -201,6 +202,8 @@ struct EditProfileView: View {
         errorMessage = nil
 
         var data: [String: Any] = [
+            "uid": uid,
+            "email": email,
             "fullName": trimmedName,
             "specialty": specialty,
             "bio": bio.trimmingCharacters(in: .whitespaces)
@@ -216,7 +219,7 @@ struct EditProfileView: View {
             data["profileImageBase64"] = jpegData.base64EncodedString()
         }
 
-        Firestore.firestore().collection("users").document(uid).setData(data, merge: true) { error in
+        Firestore.firestore().collection("beautyProfessionals").document(uid).setData(data, merge: true) { error in
             isSaving = false
             if let error = error {
                 errorMessage = error.localizedDescription

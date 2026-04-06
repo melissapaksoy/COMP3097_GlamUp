@@ -172,8 +172,7 @@ struct HomeView: View {
         isLoading = true
 
         Firestore.firestore()
-            .collection("users")
-            .whereField("role", isEqualTo: "beautyPro")
+            .collection("beautyProfessionals")
             .getDocuments { snapshot, _ in
                 isLoading = false
                 let docs = snapshot?.documents ?? []

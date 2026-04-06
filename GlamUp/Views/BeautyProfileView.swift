@@ -214,7 +214,7 @@ struct BeautyProfileView: View {
     // MARK: - Fetch
 
     private func fetchProfile() {
-        Firestore.firestore().collection("users").document(proUserID).getDocument { doc, _ in
+        Firestore.firestore().collection("beautyProfessionals").document(proUserID).getDocument { doc, _ in
             guard let data = doc?.data() else { return }
             bio = data["bio"] as? String ?? ""
             profileImageBase64 = data["profileImageBase64"] as? String
