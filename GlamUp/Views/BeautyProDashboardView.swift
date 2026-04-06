@@ -14,6 +14,7 @@ struct BeautyProDashboardView: View {
 
     @State private var proName: String = ""
     @State private var proUID: String = ""
+    @State private var profileImageBase64: String? = nil
 
     private struct Request: Identifiable {
         let id = UUID()
@@ -22,23 +23,52 @@ struct BeautyProDashboardView: View {
         let time: String
     }
 
-    @State private var requests: [Request] = [
-        .init(name: "Lisa Chen", service: "Gel Manicure", time: "Today • 3:00 PM"),
-        .init(name: "Rachel Adams", service: "Hair Styling", time: "Tomorrow • 11:30 AM"),
-        .init(name: "Amira Patel", service: "Bridal Makeup", time: "Fri • 2:15 PM")
-    ]
+    @State private var requests: [Request] = []
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 20) {
 
                 Spacer(minLength: 0)
 
-                Text("Dashboard")
-                    .font(.title2)
-                    .bold()
-                    .foregroundStyle(.pink)
+                // MARK: Profile header
+                HStack(spacing: 16) {
+                    profileAvatar
+                        .frame(width: 64, height: 64)
+                        .clipShape(Circle())
+                        .shadow(color: .black.opacity(0.08), radius: 4)
 
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(proName.isEmpty ? "Beauty Pro" : proName)
+                            .font(.title3)
+                            .bold()
+                        Text("Welcome back!")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    NavigationLink {
+                        EditProfileView()
+                    } label: {
+                        Label("Edit", systemImage: "pencil")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundStyle(.pink)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
+                            .background(Color.pink.opacity(0.1))
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(16)
+                .background(Color.white)
+                .clipShape(RoundedRectangle(cornerRadius: 18))
+                .shadow(color: .black.opacity(0.04), radius: 6, x: 0, y: 3)
+
+                // MARK: Quick Actions
                 Text("Quick Actions")
                     .font(.headline)
                     .foregroundStyle(.secondary)
@@ -73,6 +103,7 @@ struct BeautyProDashboardView: View {
                     .buttonStyle(.plain)
                 }
 
+                // MARK: New Requests
                 Text("New Requests")
                     .font(.headline)
                     .foregroundStyle(.secondary)
@@ -106,34 +137,55 @@ struct BeautyProDashboardView: View {
         .navigationTitle("Dashboard")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button("Logout") {
-                    authVM.signOut()
-                }
-                .foregroundStyle(.pink)
+                Button("Logout") { authVM.signOut() }
+                    .foregroundStyle(.pink)
             }
         }
         .background(Color(red: 1.0, green: 0.97, blue: 0.99))
         .onAppear { fetchProInfo() }
     }
 
+    // MARK: - Profile avatar
+
+    @ViewBuilder
+    private var profileAvatar: some View {
+        if let base64 = profileImageBase64,
+           let data = Data(base64Encoded: base64),
+           let img = UIImage(data: data) {
+            Image(uiImage: img)
+                .resizable()
+                .scaledToFill()
+        } else {
+            Circle()
+                .fill(Color.pink.opacity(0.12))
+                .overlay(
+                    Text(proName.prefix(1).uppercased())
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundStyle(.pink)
+                )
+        }
+    }
+
+    // MARK: - Helpers
+
     private func fetchProInfo() {
         guard let uid = Auth.auth().currentUser?.uid else { return }
         proUID = uid
 
-        Firestore.firestore().collection("users").document(uid).getDocument { doc, _ in
+        Firestore.firestore().collection("beautyProfessionals").document(uid).getDocument { doc, _ in
             guard let data = doc?.data() else { return }
-            proName = (data["fullName"] as? String)
-                ?? (data["email"] as? String)
-                ?? "Beauty Pro"
+            proName = data["fullName"] as? String ?? data["email"] as? String ?? "Beauty Pro"
+            profileImageBase64 = data["profileImageBase64"] as? String
         }
     }
 
     private func removeRequest(_ request: Request) {
-        withAnimation {
-            requests.removeAll { $0.id == request.id }
-        }
+        withAnimation { requests.removeAll { $0.id == request.id } }
     }
 }
+
+// MARK: - Subviews
 
 private struct QuickActionCardContent: View {
     let title: String
@@ -169,46 +221,27 @@ private struct RequestRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text(name)
-                    .font(.headline)
-
+                Text(name).font(.headline)
                 Spacer()
-
-                Text(time)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Text(time).font(.caption).foregroundStyle(.secondary)
             }
 
-            Text(service)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+            Text(service).font(.subheadline).foregroundStyle(.secondary)
 
             HStack(spacing: 10) {
                 Button(action: accept) {
                     Text("ACCEPT")
-                        .font(.subheadline)
-                        .bold()
-                        .foregroundStyle(.white)
-                        .padding(.vertical, 8)
-                        .frame(maxWidth: .infinity)
-                        .background(
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(Color.green)
-                        )
+                        .font(.subheadline).bold().foregroundStyle(.white)
+                        .padding(.vertical, 8).frame(maxWidth: .infinity)
+                        .background(RoundedRectangle(cornerRadius: 10).fill(Color.green))
                 }
                 .buttonStyle(.plain)
 
                 Button(action: decline) {
                     Text("DECLINE")
-                        .font(.subheadline)
-                        .bold()
-                        .foregroundStyle(.white)
-                        .padding(.vertical, 8)
-                        .frame(maxWidth: .infinity)
-                        .background(
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(Color.red)
-                        )
+                        .font(.subheadline).bold().foregroundStyle(.white)
+                        .padding(.vertical, 8).frame(maxWidth: .infinity)
+                        .background(RoundedRectangle(cornerRadius: 10).fill(Color.red))
                 }
                 .buttonStyle(.plain)
             }
