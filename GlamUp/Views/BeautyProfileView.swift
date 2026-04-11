@@ -1,143 +1,294 @@
 import SwiftUI
+import FirebaseFirestore
 
 struct BeautyProfileView: View {
     @Environment(\.dismiss) private var dismiss
 
+    let proUserID: String
     let proName: String
     let proRole: String
 
-    @State private var selectedSlot: String? = nil
+    // Profile
+    @State private var bio: String = ""
+    @State private var profileImageBase64: String? = nil
 
-    // Local gallery images (add these to Assets.xcassets)
-    private let galleryImageNames: [String] = [
-        "gallery01", "gallery02", "gallery03",
-        "gallery04", "gallery05", "gallery06"
-    ]
+    // Reviews
+    @State private var averageRating: Double? = nil
+    @State private var totalReviews: Int? = nil
+    @State private var isLoadingReviews = false
 
-    private let services: [ServiceRowData] = [
-        .init(title: "Gel Manicure", duration: "45 min", price: "$35"),
-        .init(title: "Nail Art Add-on", duration: "15 min", price: "$15"),
-        .init(title: "Full Set Acrylic", duration: "75 min", price: "$50")
-    ]
+    // Services
+    @State private var services: [ProService] = []
+    @State private var isLoadingServices = false
 
-    private let slots = ["10:00 AM", "12:00 PM", "2:00 PM", "4:00 PM"]
+    // Availability
+    @State private var availability: [String: DayAvailability] = [:]
+    @State private var isLoadingAvailability = false
+
+    // Portfolio
+    @State private var portfolioImages: [String] = []
+    @State private var isLoadingPortfolio = false
+
+    // Booking
+    @State private var canNavigateToBooking = false
+    @State private var goToBooking = false
+
+    private let days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
 
-                HStack {
-                    BackPillButton { dismiss() }
-                    Spacer()
-                }
+                HStack { BackPillButton { dismiss() }; Spacer() }
 
-                // Header card
+                // MARK: Header card
                 HStack(spacing: 14) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.white.opacity(0.9))
-                            .frame(width: 72, height: 72)
-                        Image(systemName: "person.crop.circle.fill")
-                            .font(.system(size: 54))
-                            .foregroundStyle(.pink)
+                    Group {
+                        if let base64 = profileImageBase64,
+                           let data = Data(base64Encoded: base64),
+                           let img = UIImage(data: data) {
+                            Image(uiImage: img)
+                                .resizable()
+                                .scaledToFill()
+                        } else {
+                            Circle()
+                                .fill(Color.white.opacity(0.9))
+                                .overlay(
+                                    Image(systemName: "person.crop.circle.fill")
+                                        .font(.system(size: 54))
+                                        .foregroundStyle(.pink)
+                                )
+                        }
                     }
+                    .frame(width: 72, height: 72)
+                    .clipShape(Circle())
 
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(proName)
-                            .font(.title3).bold()
-                            .foregroundStyle(.white)
+                        Text(proName).font(.title3).bold().foregroundStyle(.white)
+                        Text(proRole).foregroundStyle(Color.white.opacity(0.9)).font(.subheadline)
 
-                        Text(proRole)
-                            .foregroundStyle(Color.white.opacity(0.9))
-                            .font(.subheadline)
-
-                        Text("⭐ 4.8 (120 reviews)")
-                            .foregroundStyle(.white)
-                            .font(.subheadline)
-                            .padding(.top, 2)
+                        Group {
+                            if isLoadingReviews {
+                                ProgressView().progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            } else if let avg = averageRating, let total = totalReviews, total > 0 {
+                                Text("⭐ \(String(format: "%.1f", avg)) (\(total) reviews)")
+                                    .foregroundStyle(.white)
+                            } else {
+                                Text("No reviews yet").foregroundStyle(.white.opacity(0.8))
+                            }
+                        }
+                        .font(.subheadline)
+                        .padding(.top, 2)
                     }
-
                     Spacer()
                 }
                 .padding(16)
                 .background(
                     LinearGradient(
                         colors: [Color.pink, Color(red: 0.85, green: 0.1, blue: 0.38)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+                        startPoint: .topLeading, endPoint: .bottomTrailing
                     )
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 18))
                 .shadow(radius: 4)
 
-                // About
+                // MARK: About
                 SectionHeader("About")
-                Text("Experienced beauty professional specializing in clean, detailed work and personalized service. Available for studio or mobile appointments depending on location.")
-                    .foregroundStyle(.secondary)
+                if bio.isEmpty {
+                    Text("This professional hasn't added a bio yet.")
+                        .foregroundStyle(.secondary)
+                        .italic()
+                } else {
+                    Text(bio).foregroundStyle(.secondary)
+                }
 
-                // Services
+                // MARK: Services
                 SectionHeader("Services & Prices")
-                VStack(spacing: 10) {
-                    ForEach(services) { s in
-                        ServiceRow(s)
-                    }
-                }
-
-                // Availability
-                SectionHeader("Availability")
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 110), spacing: 10)], spacing: 10) {
-                    ForEach(slots, id: \.self) { slot in
-                        Button {
-                            selectedSlot = slot
-                        } label: {
-                            Text(slot)
-                                .font(.subheadline).bold()
-                                .foregroundStyle(selectedSlot == slot ? .white : .primary)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 14)
-                                        .fill(selectedSlot == slot ? Color.pink : Color(.systemGray6))
-                                )
+                if isLoadingServices {
+                    ProgressView().frame(maxWidth: .infinity).padding()
+                } else if services.isEmpty {
+                    Text("No services listed yet.")
+                        .foregroundStyle(.secondary)
+                        .italic()
+                } else {
+                    VStack(spacing: 10) {
+                        ForEach(services) { s in
+                            ServiceRow(s)
                         }
-                        .buttonStyle(.plain)
                     }
                 }
 
-                // Gallery (dummy thumbnails)
-                SectionHeader("Gallery")
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
-                    ForEach(galleryImageNames, id: \.self) { name in
-                        Image(name)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(height: 100)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                            .clipped()
+                // MARK: Availability
+                SectionHeader("Availability")
+                if isLoadingAvailability {
+                    ProgressView().frame(maxWidth: .infinity).padding()
+                } else {
+                    let activeDays = days.filter { availability[$0]?.isOn == true }
+                    if activeDays.isEmpty {
+                        Text("No availability set yet.")
+                            .foregroundStyle(.secondary)
+                            .italic()
+                    } else {
+                        VStack(spacing: 8) {
+                            ForEach(activeDays, id: \.self) { day in
+                                if let a = availability[day] {
+                                    HStack {
+                                        Text(day).font(.subheadline).fontWeight(.medium)
+                                        Spacer()
+                                        Text("\(hourLabel(a.startHour)) – \(hourLabel(a.endHour))")
+                                            .font(.subheadline)
+                                            .foregroundStyle(.pink)
+                                    }
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 10)
+                                    .background(Color(.systemGray6))
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                }
+                            }
+                        }
                     }
                 }
 
-                // Action buttons
-                NavigationLink {
-                    BookingAppointmentView(proName: proName)
-                } label: {
-                    PrimaryButton(title: "BOOK APPOINTMENT")
+                // MARK: Portfolio
+                SectionHeader("Portfolio")
+                if isLoadingPortfolio {
+                    ProgressView().frame(maxWidth: .infinity).padding()
+                } else if portfolioImages.isEmpty {
+                    Text("No portfolio photos yet.")
+                        .foregroundStyle(.secondary)
+                        .italic()
+                } else {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
+                        ForEach(Array(portfolioImages.enumerated()), id: \.offset) { _, base64 in
+                            if let data = Data(base64Encoded: base64),
+                               let img = UIImage(data: data) {
+                                Image(uiImage: img)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(height: 100)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                    .clipped()
+                            }
+                        }
+                    }
                 }
 
-                NavigationLink {
-                    RatingsReviewsView()
-                } label: {
-                    SecondaryButton(title: "RATINGS & REVIEWS")
+                // MARK: Action buttons
+                VStack(spacing: 12) {
+                    Button {
+                        guard canNavigateToBooking else { return }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { goToBooking = true }
+                    } label: {
+                        PrimaryButton(title: "BOOK APPOINTMENT")
+                            .opacity(canNavigateToBooking ? 1 : 0.7)
+                    }
+                    .buttonStyle(.plain)
+
+                    NavigationLink {
+                        RatingsReviewsView(proName: proName, proUserID: proUserID)
+                    } label: {
+                        SecondaryButton(title: "Ratings & Reviews")
+                    }
+                    .buttonStyle(.plain)
                 }
 
                 Spacer(minLength: 10)
             }
             .padding(20)
+            .onAppear {
+                fetchProfile()
+                fetchReviews()
+                fetchServices()
+                fetchAvailability()
+                fetchPortfolio()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { canNavigateToBooking = true }
+            }
         }
         .navigationBarHidden(true)
         .background(Color(red: 1.0, green: 0.97, blue: 0.99))
+        .navigationDestination(isPresented: $goToBooking) {
+            BookingAppointmentView(proName: proName, proUserID: proUserID, isBeautyPro: false)
+        }
+    }
+
+    // MARK: - Fetch
+
+    private func fetchProfile() {
+        Firestore.firestore().collection("beautyProfessionals").document(proUserID).getDocument { doc, _ in
+            guard let data = doc?.data() else { return }
+            bio = data["bio"] as? String ?? ""
+            profileImageBase64 = data["profileImageBase64"] as? String
+        }
+    }
+
+    private func fetchReviews() {
+        isLoadingReviews = true
+        Firestore.firestore().collection("reviews")
+            .whereField("proUserID", isEqualTo: proUserID)
+            .getDocuments { snapshot, error in
+                defer { isLoadingReviews = false }
+                guard error == nil, let docs = snapshot?.documents else { return }
+                let ratings = docs.compactMap { doc -> Double? in
+                    let v = doc.data()["rating"]
+                    if let d = v as? Double { return d }
+                    if let i = v as? Int { return Double(i) }
+                    return nil
+                }
+                totalReviews = ratings.count
+                averageRating = ratings.isEmpty ? nil : ratings.reduce(0, +) / Double(ratings.count)
+            }
+    }
+
+    private func fetchServices() {
+        isLoadingServices = true
+        Firestore.firestore().collection("proServices")
+            .whereField("proUserID", isEqualTo: proUserID)
+            .getDocuments { snapshot, _ in
+                isLoadingServices = false
+                services = snapshot?.documents.compactMap { doc in
+                    let data = doc.data()
+                    guard let name = data["name"] as? String,
+                          let duration = data["duration"] as? String,
+                          let price = data["price"] as? String else { return nil }
+                    return ProService(id: doc.documentID, name: name, duration: duration, price: price)
+                } ?? []
+            }
+    }
+
+    private func fetchAvailability() {
+        isLoadingAvailability = true
+        Firestore.firestore().collection("availability").document(proUserID).getDocument { doc, _ in
+            isLoadingAvailability = false
+            guard let data = doc?.data() else { return }
+            var loaded: [String: DayAvailability] = [:]
+            for day in days {
+                if let d = data[day] as? [String: Any] {
+                    loaded[day] = DayAvailability(
+                        isOn: d["isOn"] as? Bool ?? false,
+                        startHour: d["startHour"] as? Int ?? 9,
+                        endHour: d["endHour"] as? Int ?? 17
+                    )
+                }
+            }
+            availability = loaded
+        }
+    }
+
+    private func fetchPortfolio() {
+        isLoadingPortfolio = true
+        Firestore.firestore().collection("portfolios").document(proUserID).getDocument { doc, _ in
+            isLoadingPortfolio = false
+            portfolioImages = doc?.data()?["images"] as? [String] ?? []
+        }
+    }
+
+    private func hourLabel(_ hour: Int) -> String {
+        let h = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour)
+        return "\(h):00 \(hour >= 12 ? "PM" : "AM")"
     }
 }
+
+// MARK: - Reusable subviews
 
 struct ServiceRowData: Identifiable {
     let id = UUID()
@@ -146,10 +297,10 @@ struct ServiceRowData: Identifiable {
     let price: String
 }
 
-private func ServiceRow(_ s: ServiceRowData) -> some View {
+private func ServiceRow(_ s: ProService) -> some View {
     HStack {
         VStack(alignment: .leading, spacing: 2) {
-            Text(s.title).font(.headline)
+            Text(s.name).font(.headline)
             Text(s.duration).font(.subheadline).foregroundStyle(.secondary)
         }
         Spacer()
@@ -161,14 +312,11 @@ private func ServiceRow(_ s: ServiceRowData) -> some View {
 }
 
 private func SectionHeader(_ text: String) -> some View {
-    Text(text)
-        .font(.headline)
-        .foregroundStyle(.pink)
+    Text(text).font(.headline).foregroundStyle(.pink)
 }
 
 #Preview {
     NavigationStack {
-        BeautyProfileView(proName: "Sophia Martinez", proRole: "Nail Artist")
+        BeautyProfileView(proUserID: "preview123", proName: "Sophia Martinez", proRole: "Makeup Artist")
     }
 }
-

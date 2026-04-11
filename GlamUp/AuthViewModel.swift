@@ -20,12 +20,27 @@ final class AuthViewModel: ObservableObject {
     private var handle: AuthStateDidChangeListenerHandle?
 
     init() {
+        forceLogoutOnLaunch()   // 👈 ADD THIS
         listenForAuthChanges()
     }
 
     deinit {
         if let handle {
             Auth.auth().removeStateDidChangeListener(handle)
+        }
+    }
+
+    // MARK: - Force Login Screen on App Launch
+    private func forceLogoutOnLaunch() {
+        do {
+            try Auth.auth().signOut()
+            currentUser = nil
+            userRole = nil
+            authErrorMessage = nil
+            isLoadingRole = false
+            print("✅ Forced logout on app launch")
+        } catch {
+            print("⚠️ Could not force logout on launch: \(error.localizedDescription)")
         }
     }
 
@@ -92,6 +107,20 @@ final class AuthViewModel: ObservableObject {
                     "email": email,
                     "createdAt": FieldValue.serverTimestamp()
                 ])
+
+            if role == .beautyPro {
+                try await Firestore.firestore()
+                    .collection("beautyProfessionals")
+                    .document(uid)
+                    .setData([
+                        "uid": uid,
+                        "email": email,
+                        "fullName": "",
+                        "specialty": "Beauty Pro",
+                        "bio": "",
+                        "createdAt": FieldValue.serverTimestamp()
+                    ])
+            }
 
             didCompleteRegistration = true
 
