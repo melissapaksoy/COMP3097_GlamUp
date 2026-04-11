@@ -108,6 +108,20 @@ final class AuthViewModel: ObservableObject {
                     "createdAt": FieldValue.serverTimestamp()
                 ])
 
+            if role == .beautyPro {
+                try await Firestore.firestore()
+                    .collection("beautyProfessionals")
+                    .document(uid)
+                    .setData([
+                        "uid": uid,
+                        "email": email,
+                        "fullName": "",
+                        "specialty": "Beauty Pro",
+                        "bio": "",
+                        "createdAt": FieldValue.serverTimestamp()
+                    ])
+            }
+
             didCompleteRegistration = true
 
             try Auth.auth().signOut()
