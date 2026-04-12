@@ -7,7 +7,7 @@
 //   a disputes list with High/Medium/Low priority badges, and a
 //   quick actions grid (Add User, Block User, Reports, etc.).
 // - Hooked up AuthViewModel and added a Logout button in the toolbar.
-// - Data is placeholder for now, not yet live from Firestore.
+// - Total Users count is live from Firestore `users` via AdminDashboardViewModel.
 // ============================================================
 
 import SwiftUI
@@ -47,6 +47,7 @@ private enum AdminCardTypography {
 
 struct AdminDashboardView: View {
     @EnvironmentObject private var authVM: AuthViewModel
+    @StateObject private var adminMetrics = AdminDashboardViewModel()
 
     var body: some View {
         ScrollView {
@@ -56,9 +57,10 @@ struct AdminDashboardView: View {
                 HStack(alignment: .center, spacing: AdminPanelLayout.cardSpacing) {
                     MetricCard(
                         title: "Total Users",
-                        value: "12,847",
-                        delta: "+2.5% from last month",
-                        deltaColor: .green,
+                        value: adminMetrics.totalUsersDisplayValue,
+                        delta: "Live count from Firestore",
+                        deltaColor: .secondary,
+                        deltaMuted: false,
                         symbol: "person.3.fill"
                     )
 
@@ -158,6 +160,8 @@ struct AdminDashboardView: View {
         .navigationTitle("Admin Panel")
         .navigationBarTitleDisplayMode(.large)
         .navigationBarBackButtonHidden(true)
+        .onAppear { adminMetrics.startObservingTotalUsers() }
+        .onDisappear { adminMetrics.stopObservingTotalUsers() }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Logout") {
@@ -229,6 +233,8 @@ private struct MetricCard: View {
     let value: String
     let delta: String
     let deltaColor: Color
+    /// When `true`, delta uses a softer opacity (used for secondary trend-style copy).
+    var deltaMuted: Bool = true
     let symbol: String
 
     var body: some View {
@@ -236,7 +242,7 @@ private struct MetricCard: View {
             Text(delta)
                 .font(AdminCardTypography.meta)
                 .fontWeight(.regular)
-                .foregroundStyle(deltaColor.opacity(0.55))
+                .foregroundStyle(deltaMuted ? deltaColor.opacity(0.55) : deltaColor)
                 .lineLimit(2)
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
