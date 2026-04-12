@@ -2,7 +2,6 @@
 // Kashfi - Added Search and Filter
 // Melissa - Connected client home to Firestore, fetches real pros with live ratings, fixed pros not showing.
 // Kashfi - Beauty pro cards show starting price + price filter works
-// Updated: Logout works even on newly created HomeView routes
 
 import SwiftUI
 import MapKit
