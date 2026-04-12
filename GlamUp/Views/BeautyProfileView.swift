@@ -110,16 +110,33 @@ struct BeautyProfileView: View {
 
                 // MARK: Services
                 SectionHeader("Services & Prices")
+
                 if isLoadingServices {
-                    ProgressView().frame(maxWidth: .infinity).padding()
+                    ProgressView()
+                        .frame(maxWidth: .infinity)
+                        .padding()
+
                 } else if services.isEmpty {
                     Text("No services listed yet.")
                         .foregroundStyle(.secondary)
                         .italic()
+
                 } else {
                     VStack(spacing: 10) {
                         ForEach(services) { s in
-                            ServiceRow(s)
+                            HStack {
+                                Text(s.name)
+                                    .foregroundStyle(.primary)
+
+                                Spacer()
+
+                                Text("$\(s.price)")
+                                    .fontWeight(.semibold)
+                                    .foregroundStyle(.pink)
+                            }
+                            .padding()
+                            .background(Color.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
                         }
                     }
                 }
