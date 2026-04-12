@@ -17,7 +17,7 @@ struct LoginView: View {
     @State private var isLoading = false
     @State private var errorMessage: String?
 
-    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var authVM: AuthViewModel
 
     @State private var email: String = ""
     @State private var password: String = ""
@@ -35,12 +35,6 @@ struct LoginView: View {
 
                 ScrollView {
                     VStack(spacing: AuthScreenChrome.stackSpacing) {
-                    // Back button to match RegisterView
-                    HStack {
-                        BackPillButton { dismiss() }
-                        Spacer()
-                    }
-
                     // Title to match RegisterView styling
                     Text("Welcome to")
                         .font(.title2).bold()
@@ -49,6 +43,30 @@ struct LoginView: View {
                         .padding(.top, AuthScreenChrome.titleTopPadding)
 
                     GlamUpAuthLogo()
+
+                    if let sessionMsg = authVM.authErrorMessage, !sessionMsg.isEmpty {
+                        Text(sessionMsg)
+                            .font(.subheadline)
+                            .foregroundStyle(.red)
+                            .multilineTextAlignment(.center)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .padding(.horizontal, 12)
+                            .background(Color.white.opacity(0.92))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+
+                    if let banner = authVM.loginBannerMessage, !banner.isEmpty {
+                        Text(banner)
+                            .font(.subheadline)
+                            .foregroundStyle(.pink)
+                            .multilineTextAlignment(.center)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .padding(.horizontal, 12)
+                            .background(Color.white.opacity(0.92))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
 
                     // Fields styled like RegisterView (roundedBorder)
                     // Email
@@ -138,6 +156,8 @@ struct LoginView: View {
             errorMessage = "Please enter email and password"
             return
         }
+        authVM.loginBannerMessage = nil
+        authVM.authErrorMessage = nil
         isLoading = true
         defer { isLoading = false }
         do {
@@ -158,5 +178,6 @@ struct LoginView: View {
 
 #Preview {
     LoginView()
+        .environmentObject(AuthViewModel())
 }
 
