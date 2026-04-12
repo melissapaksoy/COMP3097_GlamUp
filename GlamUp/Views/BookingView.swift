@@ -1,20 +1,4 @@
-// BookingAppointmentView.swift
-// Updated:
-// ✅ Unavailable weekdays cannot be selected
-// ✅ Automatically jumps to next available date
-// ✅ Past hours on current day are hidden
-// ✅ Popup compact calendar
-// ✅ White background + pink highlight
-// ✅ Dynamic 1-hour slots
-
-// BookingAppointmentView.swift
-// Full version with:
-// - Custom popup calendar matching UI
-// - Closed days greyed out + unselectable
-// - Dynamic 1-hour slots
-// - Past times hidden for today
-// - Service prices shown
-// - Pink / white GlamUp styling
+//Kashfi - Booking page template file, updated UI, updated services and timing to reflect firestore
 
 import SwiftUI
 import FirebaseAuth
