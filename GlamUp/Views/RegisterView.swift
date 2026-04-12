@@ -1,3 +1,21 @@
+// ============================================================
+// RegisterView.swift — Melissa's changes
+// ============================================================
+// - Built the registration screen with full name, email, password,
+//   and account type picker (Client / Beauty Pro).
+// - Calls authVM.register() to create the Firebase account and
+//   save the role to Firestore. Dismisses back to login on success.
+// - Fixed a bug where fullName was being collected but never
+//   actually passed to register() — so it was always saved as "".
+//   Now properly passes it so beauty pros show their real name.
+// - Added fullName validation so you can't register with a blank name.
+// - Added friendlyError() to translate Firebase error messages into
+//   something readable:
+//     • Duplicate email → "An account with this email already exists."
+//     • Bad email format → "Please enter a valid email address."
+//     • Weak password → "Password must be at least 6 characters."
+// ============================================================
+
 import SwiftUI
 
 struct RegisterView: View {
@@ -94,21 +112,32 @@ struct RegisterView: View {
     }
 
     private func register() {
-        guard !email.isEmpty, !password.isEmpty else {
+        guard !fullName.trimmingCharacters(in: .whitespaces).isEmpty,
+              !email.isEmpty, !password.isEmpty else {
             errorMessage = "Please fill in all fields"
             return
         }
         isLoading = true
         Task {
-            do {
-                await authVM.register(email: email, password: password, role: selectedRole)
-                // After registration, FirebaseAuth signs the user in automatically.
-                // RootView will switch to ContentView via auth state listener.
-            } catch {
-                errorMessage = error.localizedDescription
+            await authVM.register(email: email, password: password, fullName: fullName, role: selectedRole)
+            if let authError = authVM.authErrorMessage {
+                errorMessage = friendlyError(authError)
             }
             isLoading = false
         }
+    }
+
+    private func friendlyError(_ message: String) -> String {
+        if message.contains("email address is already in use") || message.contains("already in use") {
+            return "An account with this email already exists. Please log in instead."
+        }
+        if message.contains("badly formatted") || message.contains("invalid") {
+            return "Please enter a valid email address."
+        }
+        if message.contains("at least 6") || message.contains("weak") {
+            return "Password must be at least 6 characters."
+        }
+        return message
     }
 }
 

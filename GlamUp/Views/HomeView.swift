@@ -1,3 +1,20 @@
+// ============================================================
+// HomeView.swift — Melissa's changes
+// ============================================================
+// - Connected the client home screen to Firestore — beauty pros
+//   are now fetched from the "beautyProfessionals" collection
+//   instead of being hardcoded dummy data.
+// - Tapping a pro card navigates to BeautyProfileView with the
+//   pro's ID, name, and role passed through.
+// - fetchRatings() loads live average ratings from the "reviews"
+//   collection and shows them on each ProCardRow.
+// - Profile photos (base64) loaded and shown in the card avatar.
+// - Fixed a bug where pros weren't showing up at all.
+// - Moved data source to "beautyProfessionals" collection and added
+//   email fallback for accounts registered before the fullName fix.
+// - Added Logout button in the toolbar.
+// ============================================================
+
 import SwiftUI
 import MapKit
 import FirebaseFirestore

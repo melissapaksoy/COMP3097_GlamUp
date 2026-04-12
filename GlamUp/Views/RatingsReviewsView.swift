@@ -1,3 +1,5 @@
+// RatingsReviewsView.swift — built by Kashfi
+
 import SwiftUI
 import FirebaseAuth
 import FirebaseFirestore

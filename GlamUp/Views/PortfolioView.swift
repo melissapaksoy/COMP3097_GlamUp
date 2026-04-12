@@ -1,7 +1,17 @@
-//
-//  PortfolioView.swift
-//  GlamUp
-//
+// ============================================================
+// PortfolioView.swift — Melissa's changes
+// ============================================================
+// - Created the portfolio management screen for beauty pros.
+// - Shows up to 6 photos in a 3-column square grid.
+// - "+" tile opens PhotosPicker to add a new photo.
+// - Each photo has an X button to delete it.
+// - Fully connected to Firestore: photos are stored in
+//   "portfolios/{uid}" as a base64 string array.
+// - addPhoto() resizes the image to 400px max, encodes as
+//   base64 JPEG, and appends it to the Firestore array.
+// - deleteImage() removes by index and updates Firestore.
+// - Removed all hardcoded dummy photos — everything is live from DB.
+// ============================================================
 
 import SwiftUI
 import PhotosUI

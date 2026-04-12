@@ -1,3 +1,5 @@
+// UIComponents.swift — built by Kashfi
+
 import SwiftUI
 
 struct PrimaryButton: View {

@@ -1,3 +1,19 @@
+// ============================================================
+// AuthViewModel.swift — Melissa's changes
+// ============================================================
+// - Created this whole file — handles all the Firebase auth logic
+//   for the app (login, register, logout, role loading).
+// - Added UserRole enum with client, beautyPro, and admin cases.
+// - listenForAuthChanges() watches Firebase auth state and loads
+//   the user's role from Firestore automatically on sign-in.
+// - forceLogoutOnLaunch() so the app always starts at login screen.
+// - When a beauty pro registers, also creates a doc in
+//   "beautyProfessionals" with their uid, email, specialty, etc.
+// - Fixed fullName being saved as "" on registration — now
+//   properly saves the name they typed in the register form to
+//   both "users" and "beautyProfessionals" in Firestore.
+// ============================================================
+
 import SwiftUI
 import Combine
 import FirebaseAuth
@@ -91,7 +107,7 @@ final class AuthViewModel: ObservableObject {
         }
     }
 
-    func register(email: String, password: String, role: UserRole) async {
+    func register(email: String, password: String, fullName: String = "", role: UserRole) async {
         authErrorMessage = nil
         didCompleteRegistration = false
 
@@ -105,6 +121,7 @@ final class AuthViewModel: ObservableObject {
                 .setData([
                     "role": role.rawValue,
                     "email": email,
+                    "fullName": fullName,
                     "createdAt": FieldValue.serverTimestamp()
                 ])
 
@@ -115,7 +132,7 @@ final class AuthViewModel: ObservableObject {
                     .setData([
                         "uid": uid,
                         "email": email,
-                        "fullName": "",
+                        "fullName": fullName,
                         "specialty": "Beauty Pro",
                         "bio": "",
                         "createdAt": FieldValue.serverTimestamp()

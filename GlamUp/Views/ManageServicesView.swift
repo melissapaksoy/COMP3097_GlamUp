@@ -1,7 +1,14 @@
-//
-//  ManageServicesView.swift
-//  GlamUp
-//
+// ============================================================
+// ManageServicesView.swift — Melissa's changes
+// ============================================================
+// - Created this screen so beauty pros can manage their services.
+// - Lists services from "proServices" in Firestore filtered by proUserID.
+// - "+" toolbar button opens a sheet to add a new service
+//   (name, duration, price) which saves to Firestore on submit.
+// - Each row has a trash icon to delete the service from Firestore.
+// - ProService struct defined here — also used in BeautyProfileView
+//   to display services to clients on the pro's profile page.
+// ============================================================
 
 import SwiftUI
 import FirebaseFirestore
