@@ -175,12 +175,10 @@ struct BookingAppointmentView: View {
             }
 
             let data = snapshot?.data() ?? [:]
-            let clientName =
-                (data["fullName"] as? String)?
-                    .trimmingCharacters(in: .whitespacesAndNewlines)
-                    .isEmpty == false
-                ? (data["fullName"] as? String ?? "Client")
-                : (data["email"] as? String ?? "Client")
+            let rawName = (data["fullName"] as? String ?? "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+
+            let clientName = rawName.isEmpty ? "Client" : rawName
 
             let clientEmail = data["email"] as? String ?? (Auth.auth().currentUser?.email ?? "")
 
