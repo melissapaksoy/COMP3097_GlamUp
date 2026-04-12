@@ -1,3 +1,4 @@
+// Meric — Refined UI: auth-bg, shared logo chrome, fixed title + scroll form, spacing aligned with login.
 // Kashfi - Created the template file with dummy buttons and navigation
 // Melissa - Built registration screen; fixed fullName not being saved and added friendly duplicate email error.
 
@@ -16,76 +17,99 @@ struct RegisterView: View {
     @State private var errorMessage: String?
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 16) {
-                HStack {
-                    BackPillButton { dismiss() }
-                    Spacer()
-                }
+        ZStack {
+            Image("auth-bg")
+                .resizable()
+                .scaledToFill()
+                .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
+                .clipped()
+                .ignoresSafeArea()
+                .accessibilityHidden(true)
 
-                Text("Create Account")
-                    .font(.title2).bold()
-                    .foregroundStyle(.pink)
-
-                // Fields
-                Group {
-                    TextField("Full name", text: $fullName)
-                        .textContentType(.name)
-                        .autocorrectionDisabled()
-                        .padding(.vertical, 14)
-                        .padding(.horizontal, 12)
-                        .background(Color.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
-                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color(.quaternaryLabel)))
-                        .shadow(color: .black.opacity(0.1), radius: 6, x: 0, y: 2)
-
-                    TextField("Email", text: $email)
-                        .textContentType(.emailAddress)
-                        .keyboardType(.emailAddress)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .padding(.vertical, 14)
-                        .padding(.horizontal, 12)
-                        .background(Color.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
-                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color(.quaternaryLabel)))
-                        .shadow(color: .black.opacity(0.1), radius: 6, x: 0, y: 2)
-
-                    SecureField("Password", text: $password)
-                        .textContentType(.newPassword)
-                        .padding(.vertical, 14)
-                        .padding(.horizontal, 12)
-                        .background(Color.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
-                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color(.quaternaryLabel)))
-                        .shadow(color: .black.opacity(0.1), radius: 6, x: 0, y: 2)
-                }
-
-                // Role picker
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Account Type").font(.headline).foregroundStyle(.pink)
-                    Picker("Account Type", selection: $selectedRole) {
-                        Text("Client").tag(AuthViewModel.UserRole.client)
-                        Text("Beauty Professional").tag(AuthViewModel.UserRole.beautyPro)
+            VStack(spacing: 0) {
+                // Fixed at top — does not scroll with the form.
+                VStack(alignment: .leading, spacing: AuthScreenChrome.stackSpacing) {
+                    HStack {
+                        BackPillButton { dismiss() }
+                        Spacer()
                     }
-                    .pickerStyle(.segmented)
-                }
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
-                Button(action: register) {
-                    if isLoading {
-                        ProgressView().frame(maxWidth: .infinity)
-                    } else {
-                        PrimaryButton(title: "Register").fontWeight(.bold)
+                    Text("Create Account")
+                        .font(.title2).bold()
+                        .foregroundStyle(.pink)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, AuthScreenChrome.titleTopPadding)
+
+                    GlamUpAuthLogo()
+                }
+                .padding(.horizontal, AuthScreenChrome.horizontalPadding)
+
+                ScrollView {
+                    VStack(spacing: AuthScreenChrome.stackSpacing) {
+                        Group {
+                            TextField("Full name", text: $fullName)
+                                .textContentType(.name)
+                                .autocorrectionDisabled()
+                                .padding(.vertical, 14)
+                                .padding(.horizontal, 12)
+                                .background(Color.white)
+                                .clipShape(RoundedRectangle(cornerRadius: 14))
+                                .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color(.quaternaryLabel)))
+                                .shadow(color: .black.opacity(0.1), radius: 6, x: 0, y: 2)
+
+                            TextField("Email", text: $email)
+                                .textContentType(.emailAddress)
+                                .keyboardType(.emailAddress)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
+                                .padding(.vertical, 14)
+                                .padding(.horizontal, 12)
+                                .background(Color.white)
+                                .clipShape(RoundedRectangle(cornerRadius: 14))
+                                .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color(.quaternaryLabel)))
+                                .shadow(color: .black.opacity(0.1), radius: 6, x: 0, y: 2)
+
+                            SecureField("Password", text: $password)
+                                .textContentType(.newPassword)
+                                .padding(.vertical, 14)
+                                .padding(.horizontal, 12)
+                                .background(Color.white)
+                                .clipShape(RoundedRectangle(cornerRadius: 14))
+                                .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color(.quaternaryLabel)))
+                                .shadow(color: .black.opacity(0.1), radius: 6, x: 0, y: 2)
+                        }
+
+                        VStack(alignment: .center, spacing: 8) {
+                            Text("Account Type").font(.headline).foregroundStyle(.pink)
+                            Picker("Account Type", selection: $selectedRole) {
+                                Text("Client").tag(AuthViewModel.UserRole.client)
+                                Text("Beauty Professional").tag(AuthViewModel.UserRole.beautyPro)
+                            }
+                            .pickerStyle(.segmented)
+                        }
+                        .frame(maxWidth: .infinity)
+
+                        Button(action: register) {
+                            if isLoading {
+                                ProgressView().frame(maxWidth: .infinity)
+                            } else {
+                                PrimaryButton(title: "Register").fontWeight(.bold)
+                            }
+                        }
+                        .disabled(isLoading)
+
+                        Spacer(minLength: 0)
                     }
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, AuthScreenChrome.horizontalPadding)
+                    .padding(.top, AuthScreenChrome.stackSpacing)
+                    .padding(.bottom, AuthScreenChrome.verticalPadding)
                 }
-                .disabled(isLoading)
-
-                Spacer(minLength: 0)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .padding(20)
         }
         .navigationBarHidden(true)
-        .background(Color(red: 1.0, green: 0.97, blue: 0.99))
         .alert("Registration Error", isPresented: .constant(errorMessage != nil), presenting: errorMessage) { _ in
             Button("OK", role: .cancel) { errorMessage = nil }
         } message: { msg in

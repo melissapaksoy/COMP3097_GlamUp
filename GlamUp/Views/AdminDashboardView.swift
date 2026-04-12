@@ -1,4 +1,5 @@
-
+// Meric — Admin dashboard UI (layout, stat cards, Quick Actions cleanup)
+// Meric - Wired Firestore metrics for Total Users and Active Bookings (AuthService + AdminDashboardViewModel)
 // Kashfi - Created the template file with dummy buttons and navigation
 // Melissa - Created the admin dashboard UI with metric cards, disputes list, quick actions, and logout.
 
@@ -13,17 +14,11 @@ private enum AdminPanelLayout {
     static let cornerRadius: CGFloat = 12
     static let listRowSpacing: CGFloat = 12
     static let actionButtonMinHeight: CGFloat = 48
-    /// Shared outer height for the four top stat cards (metric + small) so the grid is uniform.
     static let statCardHeight: CGFloat = 136
-    /// Reserved width for the SF Symbol so labels never collide with glyphs (incl. complex symbols).
     static let statIconSlotWidth: CGFloat = 36
-    /// Horizontal gap between icon slot and label.
     static let statIconLabelSpacing: CGFloat = 8
-    /// Fixed-height bottom band: avoids an inner `Spacer` competing with the middle flex region (which was collapsing the center strip).
     static let statHelperBandHeight: CGFloat = 44
-    /// Nudges the main stat figure slightly lower in the middle band (optical adjustment).
     static let statValueTopPadding: CGFloat = 24
-    /// Dispute row content rhythm.
     static let disputeTitleToDetailSpacing: CGFloat = 8
     static let disputeDetailToTimeSpacing: CGFloat = 6
 }
@@ -58,8 +53,8 @@ struct AdminDashboardView: View {
 
                     MetricCard(
                         title: "Active Bookings",
-                        value: "1,234",
-                        delta: "+1.1% from last week",
+                        value: adminMetrics.activeBookingsDisplayValue,
+                        delta: "Pending & approved",
                         deltaColor: .green,
                         symbol: "calendar.badge.clock"
                     )
@@ -137,8 +132,6 @@ struct AdminDashboardView: View {
                         ActionButton(title: "Add User", systemImage: "person.badge.plus") {}
                         ActionButton(title: "Block User", systemImage: "person.fill.xmark") {}
                         ActionButton(title: "Reports", systemImage: "doc.text.magnifyingglass") {}
-                        ActionButton(title: "Settings", systemImage: "gearshape") {}
-                        ActionButton(title: "Dashboard", systemImage: "rectangle.grid.2x2") {}
                         ActionButton(title: "Users", systemImage: "person.2") {}
                         ActionButton(title: "Bookings", systemImage: "calendar") {}
                         ActionButton(title: "Disputes", systemImage: "exclamationmark.bubble") {}
@@ -152,8 +145,8 @@ struct AdminDashboardView: View {
         .navigationTitle("Admin Panel")
         .navigationBarTitleDisplayMode(.large)
         .navigationBarBackButtonHidden(true)
-        .onAppear { adminMetrics.startObservingTotalUsers() }
-        .onDisappear { adminMetrics.stopObservingTotalUsers() }
+        .onAppear { adminMetrics.startObservingDashboardMetrics() }
+        .onDisappear { adminMetrics.stopObservingDashboardMetrics() }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Logout") {
@@ -166,10 +159,6 @@ struct AdminDashboardView: View {
     }
 }
 
-/// Three vertical zones: top (icon + label), middle (all remaining height — value vertically centered), bottom (fixed band, helper bottom-aligned).
-///
-/// Layout note: A bottom `VStack { Spacer(); helper }.frame(minHeight:)` has no max height, so the inner `Spacer` can expand and steal **all**
-/// flexible space from the middle — leaving no room for the centered number. The bottom band is therefore a **fixed height** with `.bottom` alignment.
 private struct AdminStatCardLayout<Helper: View>: View {
     let symbol: String
     let title: String
@@ -225,7 +214,6 @@ private struct MetricCard: View {
     let value: String
     let delta: String
     let deltaColor: Color
-    /// When `true`, delta uses a softer opacity (used for secondary trend-style copy).
     var deltaMuted: Bool = true
     let symbol: String
 
