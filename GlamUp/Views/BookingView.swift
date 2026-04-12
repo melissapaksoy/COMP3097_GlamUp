@@ -1,6 +1,9 @@
 // BookingView.swift — built by Kashfi
+// Updated with Firestore backend booking save flow
 
 import SwiftUI
+import FirebaseAuth
+import FirebaseFirestore
 
 struct BookingAppointmentView: View {
     @Environment(\.dismiss) private var dismiss
@@ -19,6 +22,8 @@ struct BookingAppointmentView: View {
     @State private var selectedDate = Date()
     @State private var selectedTime: String? = nil
     @State private var goToConfirm = false
+    @State private var isSaving = false
+    @State private var errorMessage: String? = nil
 
     private let slots = ["10:00 AM", "1:00 PM", "3:00 PM", "5:00 PM"]
 
@@ -103,14 +108,28 @@ struct BookingAppointmentView: View {
                     }
                 }
 
+                if let errorMessage {
+                    Text(errorMessage)
+                        .font(.subheadline)
+                        .foregroundStyle(.red)
+                }
+
                 // Confirm
                 Button {
-                    goToConfirm = true
+                    saveBooking()
                 } label: {
-                    PrimaryButton(title: "Confirm Booking")
+                    ZStack {
+                        PrimaryButton(title: isSaving ? "Saving..." : "Confirm Booking")
+                            .opacity(isSaving ? 0.75 : 1.0)
+
+                        if isSaving {
+                            ProgressView()
+                                .tint(.white)
+                        }
+                    }
                 }
-                .disabled(selectedTime == nil)
-                .opacity(selectedTime == nil ? 0.6 : 1.0)
+                .disabled(selectedTime == nil || isSaving)
+                .opacity((selectedTime == nil || isSaving) ? 0.6 : 1.0)
 
                 Spacer(minLength: 12)
             }
@@ -125,6 +144,68 @@ struct BookingAppointmentView: View {
                 date: selectedDate,
                 time: selectedTime ?? "—"
             )
+        }
+    }
+
+    private func saveBooking() {
+        guard !isSaving else { return }
+
+        guard let clientID = Auth.auth().currentUser?.uid else {
+            errorMessage = "You must be signed in to make a booking."
+            return
+        }
+
+        guard let time = selectedTime else {
+            errorMessage = "Please select a time."
+            return
+        }
+
+        isSaving = true
+        errorMessage = nil
+
+        let db = Firestore.firestore()
+
+        db.collection("users").document(clientID).getDocument { snapshot, error in
+            if let error = error {
+                isSaving = false
+                errorMessage = "Failed to load your profile: \(error.localizedDescription)"
+                return
+            }
+
+            let data = snapshot?.data() ?? [:]
+            let clientName =
+                (data["fullName"] as? String)?
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                    .isEmpty == false
+                ? (data["fullName"] as? String ?? "Client")
+                : (data["email"] as? String ?? "Client")
+
+            let clientEmail = data["email"] as? String ?? (Auth.auth().currentUser?.email ?? "")
+
+            let bookingData: [String: Any] = [
+                "clientID": clientID,
+                "clientName": clientName,
+                "clientEmail": clientEmail,
+                "proUserID": proUserID,
+                "proName": proName,
+                "service": selectedService,
+                "date": Timestamp(date: selectedDate),
+                "time": time,
+                "status": "pending",
+                "createdAt": Timestamp(date: Date()),
+                "updatedAt": Timestamp(date: Date())
+            ]
+
+            db.collection("bookings").addDocument(data: bookingData) { error in
+                isSaving = false
+
+                if let error = error {
+                    errorMessage = "Failed to save booking: \(error.localizedDescription)"
+                    return
+                }
+
+                goToConfirm = true
+            }
         }
     }
 }
@@ -169,6 +250,7 @@ struct BookingConfirmationViewSwiftUI: View {
                 confirmationRow(title: "Service", value: service)
                 confirmationRow(title: "Date", value: dateText)
                 confirmationRow(title: "Time", value: time)
+                confirmationRow(title: "Status", value: "Pending Approval")
             }
             .padding(18)
             .background(Color(.systemGray6))

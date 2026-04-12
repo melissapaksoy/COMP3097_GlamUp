@@ -1,4 +1,5 @@
 // Melissa - Made the beauty pro dashboard functional with Firestore profile, quick action navigation, and logout.
+// Updated with Firestore booking request backend
 
 import SwiftUI
 import FirebaseAuth
@@ -10,15 +11,15 @@ struct BeautyProDashboardView: View {
     @State private var proName: String = ""
     @State private var proUID: String = ""
     @State private var profileImageBase64: String? = nil
+    @State private var requests: [Request] = []
+    @State private var isLoadingRequests = false
 
     private struct Request: Identifiable {
-        let id = UUID()
+        let id: String
         let name: String
         let service: String
         let time: String
     }
-
-    @State private var requests: [Request] = []
 
     var body: some View {
         ScrollView {
@@ -104,7 +105,11 @@ struct BeautyProDashboardView: View {
                     .foregroundStyle(.secondary)
 
                 VStack(spacing: 12) {
-                    if requests.isEmpty {
+                    if isLoadingRequests {
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 30)
+                    } else if requests.isEmpty {
                         VStack(spacing: 10) {
                             Image(systemName: "tray")
                                 .font(.system(size: 36))
@@ -120,8 +125,8 @@ struct BeautyProDashboardView: View {
                                 name: r.name,
                                 service: r.service,
                                 time: r.time,
-                                accept: { removeRequest(r) },
-                                decline: { removeRequest(r) }
+                                accept: { updateRequestStatus(r, to: "approved") },
+                                decline: { updateRequestStatus(r, to: "declined") }
                             )
                         }
                     }
@@ -137,7 +142,9 @@ struct BeautyProDashboardView: View {
             }
         }
         .background(Color(red: 1.0, green: 0.97, blue: 0.99))
-        .onAppear { fetchProInfo() }
+        .onAppear {
+            fetchProInfo()
+        }
     }
 
     // MARK: - Profile avatar
@@ -168,15 +175,96 @@ struct BeautyProDashboardView: View {
         guard let uid = Auth.auth().currentUser?.uid else { return }
         proUID = uid
 
-        Firestore.firestore().collection("beautyProfessionals").document(uid).getDocument { doc, _ in
-            guard let data = doc?.data() else { return }
-            proName = data["fullName"] as? String ?? data["email"] as? String ?? "Beauty Pro"
-            profileImageBase64 = data["profileImageBase64"] as? String
-        }
+        Firestore.firestore()
+            .collection("beautyProfessionals")
+            .document(uid)
+            .getDocument { doc, _ in
+                guard let data = doc?.data() else { return }
+
+                proName = data["fullName"] as? String ?? data["email"] as? String ?? "Beauty Pro"
+                profileImageBase64 = data["profileImageBase64"] as? String
+
+                fetchRequests()
+            }
     }
 
-    private func removeRequest(_ request: Request) {
-        withAnimation { requests.removeAll { $0.id == request.id } }
+    private func fetchRequests() {
+        guard !proUID.isEmpty else { return }
+
+        isLoadingRequests = true
+
+        Firestore.firestore()
+            .collection("bookings")
+            .whereField("proUserID", isEqualTo: proUID)
+            .whereField("status", isEqualTo: "pending")
+            .getDocuments { snapshot, error in
+                isLoadingRequests = false
+
+                if let error = error {
+                    print("Error fetching requests: \(error.localizedDescription)")
+                    requests = []
+                    return
+                }
+
+                let docs = snapshot?.documents ?? []
+
+                let fetched: [Request] = docs.compactMap { doc in
+                    let data = doc.data()
+
+                    let clientName = data["clientName"] as? String ?? "Client"
+                    let service = data["service"] as? String ?? "Service"
+                    let timeString = buildTimeText(from: data)
+
+                    return Request(
+                        id: doc.documentID,
+                        name: clientName,
+                        service: service,
+                        time: timeString
+                    )
+                }
+
+                withAnimation {
+                    requests = fetched
+                }
+            }
+    }
+
+    private func buildTimeText(from data: [String: Any]) -> String {
+        let time = data["time"] as? String ?? ""
+
+        if let timestamp = data["date"] as? Timestamp {
+            let date = timestamp.dateValue()
+            let formatter = DateFormatter()
+            formatter.dateStyle = .medium
+            let dateText = formatter.string(from: date)
+
+            if time.isEmpty {
+                return dateText
+            } else {
+                return "\(dateText) • \(time)"
+            }
+        }
+
+        return time.isEmpty ? "Requested time" : time
+    }
+
+    private func updateRequestStatus(_ request: Request, to status: String) {
+        Firestore.firestore()
+            .collection("bookings")
+            .document(request.id)
+            .updateData([
+                "status": status,
+                "updatedAt": Timestamp(date: Date())
+            ]) { error in
+                if let error = error {
+                    print("Error updating request status: \(error.localizedDescription)")
+                    return
+                }
+
+                withAnimation {
+                    requests.removeAll { $0.id == request.id }
+                }
+            }
     }
 }
 
@@ -218,7 +306,10 @@ private struct RequestRow: View {
             HStack {
                 Text(name).font(.headline)
                 Spacer()
-                Text(time).font(.caption).foregroundStyle(.secondary)
+                Text(time)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.trailing)
             }
 
             Text(service).font(.subheadline).foregroundStyle(.secondary)
@@ -227,7 +318,8 @@ private struct RequestRow: View {
                 Button(action: accept) {
                     Text("ACCEPT")
                         .font(.subheadline).bold().foregroundStyle(.white)
-                        .padding(.vertical, 8).frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .frame(maxWidth: .infinity)
                         .background(RoundedRectangle(cornerRadius: 10).fill(Color.green))
                 }
                 .buttonStyle(.plain)
@@ -235,7 +327,8 @@ private struct RequestRow: View {
                 Button(action: decline) {
                     Text("DECLINE")
                         .font(.subheadline).bold().foregroundStyle(.white)
-                        .padding(.vertical, 8).frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .frame(maxWidth: .infinity)
                         .background(RoundedRectangle(cornerRadius: 10).fill(Color.red))
                 }
                 .buttonStyle(.plain)
