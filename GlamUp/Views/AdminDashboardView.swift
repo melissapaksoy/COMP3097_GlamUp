@@ -1,14 +1,47 @@
 import SwiftUI
 
+private enum AdminPanelLayout {
+    static let sectionSpacing: CGFloat = 20
+    static let cardSpacing: CGFloat = 12
+    static let headerToContentSpacing: CGFloat = 12
+    static let cardPadding: CGFloat = 16
+    static let cornerRadius: CGFloat = 12
+    static let listRowSpacing: CGFloat = 12
+    static let actionButtonMinHeight: CGFloat = 48
+    /// Shared outer height for the four top stat cards (metric + small) so the grid is uniform.
+    static let statCardHeight: CGFloat = 136
+    /// Reserved width for the SF Symbol so labels never collide with glyphs (incl. complex symbols).
+    static let statIconSlotWidth: CGFloat = 36
+    /// Horizontal gap between icon slot and label.
+    static let statIconLabelSpacing: CGFloat = 8
+    /// Fixed-height bottom band: avoids an inner `Spacer` competing with the middle flex region (which was collapsing the center strip).
+    static let statHelperBandHeight: CGFloat = 44
+    /// Nudges the main stat figure slightly lower in the middle band (optical adjustment).
+    static let statValueTopPadding: CGFloat = 24
+    /// Dispute row content rhythm.
+    static let disputeTitleToDetailSpacing: CGFloat = 8
+    static let disputeDetailToTimeSpacing: CGFloat = 6
+}
+
+// MARK: - Card typography (hierarchy only; shared across stat + dispute cards)
+
+private enum AdminCardTypography {
+    static var statValue: Font { .title.bold() }
+    static var disputeTitle: Font { .body.weight(.semibold) }
+    static var statLabel: Font { .footnote }
+    static var secondaryBody: Font { .subheadline }
+    static var meta: Font { .caption2 }
+}
+
 struct AdminDashboardView: View {
     @EnvironmentObject private var authVM: AuthViewModel
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: AdminPanelLayout.sectionSpacing) {
 
-                // Top metrics
-                HStack(spacing: 12) {
+                // Top metrics (center alignment so fixed-height cards get a definite vertical proposal in the scroll view)
+                HStack(alignment: .center, spacing: AdminPanelLayout.cardSpacing) {
                     MetricCard(
                         title: "Total Users",
                         value: "12,847",
@@ -26,39 +59,41 @@ struct AdminDashboardView: View {
                     )
                 }
 
-                HStack(spacing: 12) {
+                HStack(alignment: .center, spacing: AdminPanelLayout.cardSpacing) {
                     SmallCard(
                         title: "Flagged Reviews",
                         value: "23",
                         subtitle: "Needs attention",
-                        symbol: "flag.fill",
-                        tint: .orange
+                        symbol: "flag.fill"
                     )
 
                     SmallCard(
                         title: "Open Disputes",
                         value: "8",
                         subtitle: "Pending resolution",
-                        symbol: "exclamationmark.bubble.fill",
-                        tint: .pink
+                        symbol: "exclamationmark.bubble.fill"
                     )
                 }
 
                 // Recent Disputes
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
+                VStack(alignment: .leading, spacing: AdminPanelLayout.headerToContentSpacing) {
+                    HStack(alignment: .firstTextBaseline, spacing: AdminPanelLayout.cardSpacing) {
                         Text("Recent Disputes")
                             .font(.headline)
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
 
-                        Spacer()
+                        Spacer(minLength: 8)
 
                         Button("View All") {
                             // add action later
                         }
                         .font(.subheadline)
+                        .fontWeight(.medium)
+                        .lineLimit(1)
                     }
 
-                    VStack(spacing: 8) {
+                    VStack(spacing: AdminPanelLayout.listRowSpacing) {
                         DisputeRow(
                             title: "Payment Dispute",
                             detail: "User claims unauthorized charge for booking #4321",
@@ -80,21 +115,18 @@ struct AdminDashboardView: View {
                             priority: "Low"
                         )
                     }
-                    .padding(12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(.thinMaterial)
-                    )
                 }
 
                 // Quick Actions
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: AdminPanelLayout.headerToContentSpacing) {
                     Text("Quick Actions")
                         .font(.headline)
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
 
                     LazyVGrid(
-                        columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 2),
-                        spacing: 12
+                        columns: Array(repeating: GridItem(.flexible(), spacing: AdminPanelLayout.cardSpacing), count: 2),
+                        spacing: AdminPanelLayout.cardSpacing
                     ) {
                         ActionButton(title: "Add User", systemImage: "person.badge.plus") {}
                         ActionButton(title: "Block User", systemImage: "person.fill.xmark") {}
@@ -107,20 +139,76 @@ struct AdminDashboardView: View {
                     }
                 }
 
-                Spacer(minLength: 24)
+                Spacer(minLength: AdminPanelLayout.sectionSpacing)
             }
-            .padding()
+            .padding(AdminPanelLayout.cardPadding)
         }
         .navigationTitle("Admin Panel")
+        .navigationBarTitleDisplayMode(.large)
         .navigationBarBackButtonHidden(true)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Logout") {
                     authVM.signOut()
                 }
+                .font(.body)
                 .foregroundStyle(.pink)
             }
         }
+    }
+}
+
+/// Three vertical zones: top (icon + label), middle (all remaining height — value vertically centered), bottom (fixed band, helper bottom-aligned).
+///
+/// Layout note: A bottom `VStack { Spacer(); helper }.frame(minHeight:)` has no max height, so the inner `Spacer` can expand and steal **all**
+/// flexible space from the middle — leaving no room for the centered number. The bottom band is therefore a **fixed height** with `.bottom` alignment.
+private struct AdminStatCardLayout<Helper: View>: View {
+    let symbol: String
+    let title: String
+    let value: String
+    @ViewBuilder let helperContent: () -> Helper
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top, spacing: AdminPanelLayout.statIconLabelSpacing) {
+                Image(systemName: symbol)
+                    .font(.title3)
+                    .foregroundStyle(.secondary)
+                    .frame(width: AdminPanelLayout.statIconSlotWidth, alignment: .center)
+                Text(title)
+                    .font(AdminCardTypography.statLabel)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            Color.clear
+                .frame(maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
+                .layoutPriority(1)
+                .overlay(alignment: Alignment(horizontal: .leading, vertical: .center)) {
+                    Text(value)
+                        .font(AdminCardTypography.statValue)
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+                        .padding(.top, AdminPanelLayout.statValueTopPadding)
+                }
+
+            helperContent()
+                .frame(
+                    maxWidth: .infinity,
+                    minHeight: AdminPanelLayout.statHelperBandHeight,
+                    maxHeight: AdminPanelLayout.statHelperBandHeight,
+                    alignment: .bottomLeading
+                )
+        }
+        .padding(AdminPanelLayout.cardPadding)
+        .frame(maxWidth: .infinity, minHeight: AdminPanelLayout.statCardHeight, maxHeight: AdminPanelLayout.statCardHeight, alignment: .topLeading)
+        .background(
+            RoundedRectangle(cornerRadius: AdminPanelLayout.cornerRadius, style: .continuous)
+                .fill(.thinMaterial)
+        )
     }
 }
 
@@ -132,31 +220,15 @@ private struct MetricCard: View {
     let symbol: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Image(systemName: symbol)
-                    .foregroundStyle(.secondary)
-                Spacer()
-            }
-
-            Text(title)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-            Text(value)
-                .font(.title2)
-                .bold()
-
+        AdminStatCardLayout(symbol: symbol, title: title, value: value) {
             Text(delta)
-                .font(.caption)
-                .foregroundStyle(deltaColor)
+                .font(AdminCardTypography.meta)
+                .fontWeight(.regular)
+                .foregroundStyle(deltaColor.opacity(0.55))
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .padding()
-        .frame(maxWidth: .infinity)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(.thinMaterial)
-        )
     }
 }
 
@@ -165,36 +237,17 @@ private struct SmallCard: View {
     let value: String
     let subtitle: String
     let symbol: String
-    let tint: Color
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: symbol)
-                .font(.title3)
-                .foregroundStyle(tint)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-
-                Text(value)
-                    .font(.title3)
-                    .bold()
-
-                Text(subtitle)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer()
+        AdminStatCardLayout(symbol: symbol, title: title, value: value) {
+            Text(subtitle)
+                .font(AdminCardTypography.meta)
+                .fontWeight(.regular)
+                .foregroundStyle(.red)
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .padding()
-        .frame(maxWidth: .infinity)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(.thinMaterial)
-        )
     }
 }
 
@@ -218,37 +271,50 @@ private struct DisputeRow: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top, spacing: AdminPanelLayout.cardSpacing) {
                 Text(title)
-                    .font(.subheadline)
-                    .bold()
+                    .font(AdminCardTypography.disputeTitle)
+                    .foregroundStyle(.primary)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
 
-                Spacer()
+                Spacer(minLength: 8)
 
                 Text(priority)
-                    .font(.caption2)
+                    .font(AdminCardTypography.meta)
+                    .fontWeight(.medium)
+                    .foregroundStyle(priorityColor.opacity(0.85))
                     .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
+                    .padding(.vertical, 3)
                     .background(
-                        Capsule()
-                            .fill(priorityColor.opacity(0.2))
+                        Capsule(style: .continuous)
+                            .fill(priorityColor.opacity(0.14))
                     )
-                    .foregroundColor(priorityColor)
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
             }
 
             Text(detail)
-                .font(.subheadline)
+                .font(AdminCardTypography.secondaryBody)
                 .foregroundStyle(.secondary)
+                .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, AdminPanelLayout.disputeTitleToDetailSpacing)
 
             Text(time)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+                .font(AdminCardTypography.meta)
+                .fontWeight(.regular)
+                .foregroundStyle(.tertiary)
+                .lineLimit(1)
+                .padding(.top, AdminPanelLayout.disputeDetailToTimeSpacing)
         }
-        .padding(10)
+        .padding(AdminPanelLayout.cardPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(Color(.secondarySystemBackground))
+            RoundedRectangle(cornerRadius: AdminPanelLayout.cornerRadius, style: .continuous)
+                .fill(.thinMaterial)
         )
     }
 }
@@ -260,16 +326,21 @@ private struct ActionButton: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 12) {
+            HStack(spacing: AdminPanelLayout.cardSpacing) {
                 Image(systemName: systemImage)
+                    .font(.body)
+                    .frame(width: 22, alignment: .center)
                 Text(title)
+                    .font(.subheadline)
                     .fontWeight(.semibold)
-                Spacer()
+                    .multilineTextAlignment(.leading)
+                Spacer(minLength: 0)
             }
-            .padding()
-            .frame(maxWidth: .infinity)
+            .padding(.horizontal, AdminPanelLayout.cardPadding)
+            .padding(.vertical, 14)
+            .frame(maxWidth: .infinity, minHeight: AdminPanelLayout.actionButtonMinHeight, alignment: .leading)
             .background(
-                RoundedRectangle(cornerRadius: 12)
+                RoundedRectangle(cornerRadius: AdminPanelLayout.cornerRadius, style: .continuous)
                     .fill(Color(.secondarySystemBackground))
             )
         }
