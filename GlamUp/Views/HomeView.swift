@@ -1,5 +1,6 @@
 // Kashfi - Created the template file with dummy buttons and navigation
-// Kashfi - Added Search and Filter
+// Meric - Added Search Bar, Filter and map
+// Kashfi - Made Filter and Search Bar functional
 // Melissa - Connected client home to Firestore, fetches real pros with live ratings, fixed pros not showing.
 // Kashfi - Beauty pro cards show starting price + price filter works
 
