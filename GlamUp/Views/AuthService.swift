@@ -71,4 +71,60 @@ final class AuthService {
         }
         return AppUserRole(rawValue: roleString) ?? nil
     }
+
+    // MARK: - Admin / aggregate reads
+
+    /// Same collection as registration: `AuthViewModel.register` and `register(email:password:role:)` write `users/{uid}`.
+    private let usersCollectionPath = "users"
+
+    /// One-shot read of all `users` documents (count == registered accounts with a profile doc).
+    /// - Important: Requires Firestore rules that allow the signed-in **admin** to **list/read** `users` (see `firestore.rules` in the repo). If rules only allow `users/{ownUid}`, collection reads return permission denied and the dashboard shows "—".
+    func fetchRegisteredUsersCount() async throws -> Int {
+        print("[GlamUp/AdminStats] fetchRegisteredUsersCount → Firestore.collection(\"\(usersCollectionPath)\").getDocuments()")
+        do {
+            let snapshot = try await db.collection(usersCollectionPath).getDocuments()
+            let count = snapshot.documents.count
+            print("[GlamUp/AdminStats] fetchRegisteredUsersCount ✓ count=\(count) documents (metadata fromCache=\(snapshot.metadata.isFromCache))")
+            return count
+        } catch {
+            let ns = error as NSError
+            print("[GlamUp/AdminStats] fetchRegisteredUsersCount ✗ error=\(error.localizedDescription) domain=\(ns.domain) code=\(ns.code)")
+            throw error
+        }
+    }
+
+    /// Real-time updates for the same `users` collection count.
+    /// - Note: Callbacks are dispatched on the main queue. Remove the returned registration when done.
+    @discardableResult
+    func observeRegisteredUsersCount(
+        onUpdate: @escaping (Result<Int, Error>) -> Void
+    ) -> ListenerRegistration {
+        print("[GlamUp/AdminStats] observeRegisteredUsersCount → addSnapshotListener on collection \"\(usersCollectionPath)\"")
+        return db.collection(usersCollectionPath).addSnapshotListener { snapshot, error in
+            if let error {
+                let ns = error as NSError
+                print("[GlamUp/AdminStats] listener ✗ error=\(error.localizedDescription) domain=\(ns.domain) code=\(ns.code)")
+                DispatchQueue.main.async {
+                    onUpdate(.failure(error))
+                }
+                return
+            }
+            guard let snapshot else {
+                print("[GlamUp/AdminStats] listener ✗ snapshot is nil (no error — unexpected)")
+                DispatchQueue.main.async {
+                    onUpdate(.failure(NSError(
+                        domain: "GlamUp.AdminStats",
+                        code: -1,
+                        userInfo: [NSLocalizedDescriptionKey: "Firestore returned nil snapshot"]
+                    )))
+                }
+                return
+            }
+            let count = snapshot.documents.count
+            print("[GlamUp/AdminStats] listener ✓ count=\(count) fromCache=\(snapshot.metadata.isFromCache) hasPendingWrites=\(snapshot.metadata.hasPendingWrites)")
+            DispatchQueue.main.async {
+                onUpdate(.success(count))
+            }
+        }
+    }
 }

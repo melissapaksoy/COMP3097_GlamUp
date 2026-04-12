@@ -1,3 +1,4 @@
+// Kashfi - Created the template file with dummy buttons and navigation
 // Melissa - Built registration screen; fixed fullName not being saved and added friendly duplicate email error.
 
 import SwiftUI

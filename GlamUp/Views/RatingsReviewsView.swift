@@ -1,4 +1,5 @@
-// RatingsReviewsView.swift — built by Kashfi
+// Kashfi - Created the template file with dummy buttons and navigation
+// Kashfi - Updated the UI and added functionality to both client and beauty pro ends
 
 import SwiftUI
 import FirebaseAuth

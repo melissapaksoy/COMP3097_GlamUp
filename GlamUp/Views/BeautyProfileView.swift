@@ -1,3 +1,5 @@
+// Kashfi - Created the template file with dummy buttons and navigation
+// Kashfi - Updated the UI
 // Melissa - Created client-facing pro profile with Firestore data; fixed portfolio grid and added tap-to-expand photos.
 
 import SwiftUI
