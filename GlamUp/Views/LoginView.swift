@@ -1,16 +1,4 @@
-// ============================================================
-// LoginView.swift — Melissa's changes
-// ============================================================
-// - Created the login page from scratch with the app's pink/white
-//   design: rounded text fields, shadows, PrimaryButton style.
-// - Wired up Firebase login via AuthService.shared.signIn() which
-//   also fetches the user's role from Firestore.
-// - Role-based navigation after login: client → HomeView,
-//   beautyPro → BeautyProDashboardView, admin → AdminDashboardView.
-// - Added Google and Facebook sign-in buttons (UI only, not wired up yet).
-// - "Don't have an account? Sign up!" navigates to RegisterView.
-// - Shows an error alert for wrong password, user not found, etc.
-// ============================================================
+// Melissa - Created login screen with Firebase auth and role-based navigation to client, pro, or admin dashboard.
 
 import SwiftUI
 import FirebaseAuth

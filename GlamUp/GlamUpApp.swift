@@ -1,14 +1,4 @@
-// ============================================================
-// GlamUpApp.swift — Melissa's changes
-// ============================================================
-// - Added FirebaseApp.configure() so Firebase loads on startup.
-// - Set up AuthViewModel as a @StateObject and passed it through
-//   the whole app as an environment object.
-// - Built RootView that watches auth state and sends users to
-//   the right screen: LoginView if not logged in, loading spinner
-//   while fetching role, then HomeView / BeautyProDashboardView /
-//   AdminDashboardView depending on their role.
-// ============================================================
+// Melissa - Set up Firebase, AuthViewModel, and RootView for role-based navigation (client, beautyPro, admin).
 
 import SwiftUI
 import FirebaseCore

@@ -1,22 +1,4 @@
-// ============================================================
-// BeautyProfileView.swift — Melissa's changes
-// ============================================================
-// - Created the client-facing beauty pro profile page from scratch.
-// - Shows a header card with the pro's name, role, profile photo,
-//   and average star rating — all fetched live from Firestore.
-// - Displays bio, services & prices, weekly availability, and
-//   portfolio photos, each from their own Firestore collection.
-// - Book Appointment button navigates to BookingAppointmentView.
-// - Ratings & Reviews button navigates to RatingsReviewsView.
-// - Connected portfolio to "portfolios" Firestore collection
-//   (was dummy data before).
-// - Updated fetch calls to read from "beautyProfessionals" collection.
-// - Fixed the portfolio grid — images were stretching full-width
-//   instead of fitting as squares in a 3-column grid.
-// - Made portfolio photos tappable: tap any photo to open it
-//   full-screen on a black background with an X to close.
-// - Added IdentifiableImage helper struct for the fullScreenCover.
-// ============================================================
+// Melissa - Created client-facing pro profile with Firestore data; fixed portfolio grid and added tap-to-expand photos.
 
 import SwiftUI
 import FirebaseFirestore
