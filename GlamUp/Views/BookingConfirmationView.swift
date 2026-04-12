@@ -11,12 +11,10 @@
 import SwiftUI
 
 struct BookingConfirmationView: View {
-    @EnvironmentObject private var authVM: AuthViewModel
-    @State private var goHome = false
-
     let service: String
     let date: Date
     let time: String
+    var dismissToRoot: (() -> Void)? = nil
 
     private var dateText: String {
         let f = DateFormatter()
@@ -50,7 +48,7 @@ struct BookingConfirmationView: View {
             .clipShape(RoundedRectangle(cornerRadius: 14))
 
             Button {
-                goHome = true
+                dismissToRoot?()
             } label: {
                 Text("Back to Home")
                     .frame(maxWidth: .infinity)
@@ -65,11 +63,6 @@ struct BookingConfirmationView: View {
         .padding()
         .background(Color(red: 1, green: 0.97, blue: 0.99))
         .navigationBarBackButtonHidden(true)
-
-        .navigationDestination(isPresented: $goHome) {
-            HomeView()
-                .environmentObject(authVM)
-        }
     }
 
     private func detailRow(_ title: String, _ value: String) -> some View {

@@ -224,7 +224,8 @@ struct HomeView: View {
             BeautyProfileView(
                 proUserID: pro.id,
                 proName: pro.name,
-                proRole: pro.role
+                proRole: pro.role,
+                dismissToRoot: { selectedProfessional = nil }
             )
         }
         .onAppear {
