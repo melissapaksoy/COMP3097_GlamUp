@@ -1,5 +1,6 @@
-// BookingView.swift — built by Kashfi
-// Updated with Firestore backend booking save flow
+// Kashfi - Created the template file with dummy buttons and navigation
+// Kashfi - Updated the UI
+// Kashfi - Updated with Firestore backend booking save flow
 
 import SwiftUI
 import FirebaseAuth
@@ -22,6 +23,7 @@ struct BookingAppointmentView: View {
     @State private var selectedDate = Date()
     @State private var selectedTime: String? = nil
     @State private var goToConfirm = false
+    @State private var goBackHome = false
     @State private var isSaving = false
     @State private var errorMessage: String? = nil
 
@@ -139,7 +141,7 @@ struct BookingAppointmentView: View {
         .navigationBarHidden(true)
         .background(Color(red: 1.0, green: 0.97, blue: 0.99))
         .navigationDestination(isPresented: $goToConfirm) {
-            BookingConfirmationViewSwiftUI(
+            BookingConfirmationView(
                 service: selectedService,
                 date: selectedDate,
                 time: selectedTime ?? "—"
@@ -210,77 +212,77 @@ struct BookingAppointmentView: View {
     }
 }
 
-struct BookingConfirmationViewSwiftUI: View {
-    @Environment(\.dismiss) private var dismiss
-
-    let service: String
-    let date: Date
-    let time: String
-
-    private var dateText: String {
-        let f = DateFormatter()
-        f.dateStyle = .medium
-        return f.string(from: date)
-    }
-
-    var body: some View {
-        VStack(spacing: 20) {
-            HStack {
-                BackPillButton {
-                    dismiss()
-                }
-                Spacer()
-            }
-
-            Spacer().frame(height: 10)
-
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 72))
-                .foregroundStyle(.pink)
-
-            Text("Booking Confirmed!")
-                .font(.title2)
-                .bold()
-
-            Text("Your Glam Session Awaits ✨")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-            VStack(alignment: .leading, spacing: 14) {
-                confirmationRow(title: "Service", value: service)
-                confirmationRow(title: "Date", value: dateText)
-                confirmationRow(title: "Time", value: time)
-                confirmationRow(title: "Status", value: "Pending Approval")
-            }
-            .padding(18)
-            .background(Color(.systemGray6))
-            .clipShape(RoundedRectangle(cornerRadius: 18))
-
-            Spacer()
-
-            Button {
-                dismiss()
-            } label: {
-                PrimaryButton(title: "BACK")
-            }
-        }
-        .padding(20)
-        .navigationBarBackButtonHidden(true)
-        .navigationBarHidden(true)
-        .background(Color(red: 1.0, green: 0.97, blue: 0.99))
-    }
-
-    @ViewBuilder
-    private func confirmationRow(title: String, value: String) -> some View {
-        HStack {
-            Text(title)
-                .fontWeight(.semibold)
-                .foregroundStyle(.pink)
-
-            Spacer()
-
-            Text(value)
-                .multilineTextAlignment(.trailing)
-        }
-    }
-}
+//struct BookingConfirmationViewSwiftUI: View {
+//    @Environment(\.dismiss) private var dismiss
+//
+//    let service: String
+//    let date: Date
+//    let time: String
+//
+//    private var dateText: String {
+//        let f = DateFormatter()
+//        f.dateStyle = .medium
+//        return f.string(from: date)
+//    }
+//
+//    var body: some View {
+//        VStack(spacing: 20) {
+//            HStack {
+//                BackPillButton {
+//                    dismiss()
+//                }
+//                Spacer()
+//            }
+//
+//            Spacer().frame(height: 10)
+//
+//            Image(systemName: "checkmark.circle.fill")
+//                .font(.system(size: 72))
+//                .foregroundStyle(.pink)
+//
+//            Text("Booking Confirmed!")
+//                .font(.title2)
+//                .bold()
+//
+//            Text("Your Glam Session Awaits ✨")
+//                .font(.subheadline)
+//                .foregroundStyle(.secondary)
+//
+//            VStack(alignment: .leading, spacing: 14) {
+//                confirmationRow(title: "Service", value: service)
+//                confirmationRow(title: "Date", value: dateText)
+//                confirmationRow(title: "Time", value: time)
+//                confirmationRow(title: "Status", value: "Pending Approval")
+//            }
+//            .padding(18)
+//            .background(Color(.systemGray6))
+//            .clipShape(RoundedRectangle(cornerRadius: 18))
+//
+//            Spacer()
+//
+//            Button {
+//                dismiss()
+//            } label: {
+//                PrimaryButton(title: "BACK")
+//            }
+//        }
+//        .padding(20)
+//        .navigationBarBackButtonHidden(true)
+//        .navigationBarHidden(true)
+//        .background(Color(red: 1.0, green: 0.97, blue: 0.99))
+//    }
+//
+//    @ViewBuilder
+//    private func confirmationRow(title: String, value: String) -> some View {
+//        HStack {
+//            Text(title)
+//                .fontWeight(.semibold)
+//                .foregroundStyle(.pink)
+//
+//            Spacer()
+//
+//            Text(value)
+//                .multilineTextAlignment(.trailing)
+//        }
+//    }
+//}

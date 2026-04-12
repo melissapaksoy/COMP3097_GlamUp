@@ -1,4 +1,7 @@
+// Kashfi - Created the template file with dummy buttons and navigation
+// Kashfi - Added Search and Filter
 // Melissa - Connected client home to Firestore, fetches real pros with live ratings, fixed pros not showing.
+// Kashfi - Beauty pro cards show starting price + price filter works
 
 import SwiftUI
 import MapKit
@@ -16,7 +19,7 @@ struct HomeView: View {
         )
     )
 
-    // MARK: Filters
+    // Filters
     @State private var selectedService: String = "All"
     @State private var selectedPriceSort: String = "None"
     @State private var selectedRatingFilter: String = "All"
@@ -25,17 +28,29 @@ struct HomeView: View {
     @State private var ratingsMap: [String: Double] = [:]
     @State private var isLoading = false
 
-    private let serviceOptions = ["All", "Nail Artist", "Hair Stylist", "Makeup Artist", "Barber", "Esthetician", "Lash Technician", "Brow Artist"]
+    private let serviceOptions = [
+        "All",
+        "Nail Artist",
+        "Hair Stylist",
+        "Makeup Artist",
+        "Barber",
+        "Esthetician",
+        "Lash Technician",
+        "Brow Artist"
+    ]
+
     private let priceOptions = ["None", "Low to High", "High to Low"]
     private let ratingOptions = ["All", "4.5+", "4.0+", "3.5+", "3.0+"]
 
     private var filteredProfessionals: [Professional] {
         var result = professionals
 
-        let trimmed = searchText.lowercased()
+        let trimmed = searchText.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+
         if !trimmed.isEmpty {
             result = result.filter {
-                $0.name.lowercased().contains(trimmed) || $0.role.lowercased().contains(trimmed)
+                $0.name.lowercased().contains(trimmed) ||
+                $0.role.lowercased().contains(trimmed)
             }
         }
 
@@ -45,6 +60,7 @@ struct HomeView: View {
 
         if selectedRatingFilter != "All" {
             let minRating: Double
+
             switch selectedRatingFilter {
             case "4.5+": minRating = 4.5
             case "4.0+": minRating = 4.0
@@ -52,7 +68,10 @@ struct HomeView: View {
             case "3.0+": minRating = 3.0
             default: minRating = 0
             }
-            result = result.filter { (ratingsMap[$0.id] ?? $0.rating) >= minRating }
+
+            result = result.filter {
+                (ratingsMap[$0.id] ?? $0.rating) >= minRating
+            }
         }
 
         if selectedPriceSort == "Low to High" {
@@ -69,9 +88,11 @@ struct HomeView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 18) {
 
-                    // Search bar
+                    // Search Bar
                     HStack(spacing: 10) {
-                        Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+                        Image(systemName: "magnifyingglass")
+                            .foregroundStyle(.secondary)
+
                         TextField("Search services or professionals...", text: $searchText)
                             .font(.subheadline)
                     }
@@ -82,32 +103,47 @@ struct HomeView: View {
                     .shadow(color: .black.opacity(0.04), radius: 6, x: 0, y: 3)
                     .padding(.horizontal)
 
-                    // Filter dropdowns
+                    // Filters
                     HStack(spacing: 10) {
                         Menu {
                             ForEach(priceOptions, id: \.self) { option in
-                                Button(option) { selectedPriceSort = option }
+                                Button(option) {
+                                    selectedPriceSort = option
+                                }
                             }
                         } label: {
-                            SlimFilterDropdownButton(title: "Price", isActive: selectedPriceSort != "None")
+                            SlimFilterDropdownButton(
+                                title: "Price",
+                                isActive: selectedPriceSort != "None"
+                            )
                         }
                         .frame(maxWidth: .infinity)
 
                         Menu {
                             ForEach(serviceOptions, id: \.self) { option in
-                                Button(option) { selectedService = option }
+                                Button(option) {
+                                    selectedService = option
+                                }
                             }
                         } label: {
-                            SlimFilterDropdownButton(title: "Service", isActive: selectedService != "All")
+                            SlimFilterDropdownButton(
+                                title: "Service",
+                                isActive: selectedService != "All"
+                            )
                         }
                         .frame(maxWidth: .infinity)
 
                         Menu {
                             ForEach(ratingOptions, id: \.self) { option in
-                                Button(option) { selectedRatingFilter = option }
+                                Button(option) {
+                                    selectedRatingFilter = option
+                                }
                             }
                         } label: {
-                            SlimFilterDropdownButton(title: "Ratings", isActive: selectedRatingFilter != "All")
+                            SlimFilterDropdownButton(
+                                title: "Ratings",
+                                isActive: selectedRatingFilter != "All"
+                            )
                         }
                         .frame(maxWidth: .infinity)
                     }
@@ -119,24 +155,29 @@ struct HomeView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                         .padding(.horizontal)
 
-                    // Professional list
+                    // Cards
                     if isLoading {
                         ProgressView()
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 40)
+
                     } else if filteredProfessionals.isEmpty {
                         VStack(spacing: 12) {
                             Image(systemName: "person.slash")
                                 .font(.system(size: 36))
                                 .foregroundStyle(.pink.opacity(0.4))
+
                             Text(professionals.isEmpty ? "No professionals yet" : "No results found")
                                 .foregroundStyle(.secondary)
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 40)
+
                     } else {
                         ForEach(filteredProfessionals) { pro in
-                            Button { selectedProfessional = pro } label: {
+                            Button {
+                                selectedProfessional = pro
+                            } label: {
                                 ProCardRow(
                                     name: pro.name,
                                     role: pro.role,
@@ -157,18 +198,26 @@ struct HomeView: View {
         .navigationTitle("Explore")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button("Logout") { authVM.signOut() }
-                    .foregroundStyle(.pink)
+                Button("Logout") {
+                    authVM.signOut()
+                }
+                .foregroundStyle(.pink)
             }
         }
         .navigationDestination(item: $selectedProfessional) { pro in
-            BeautyProfileView(proUserID: pro.id, proName: pro.name, proRole: pro.role)
+            BeautyProfileView(
+                proUserID: pro.id,
+                proName: pro.name,
+                proRole: pro.role
+            )
         }
-        .onAppear { fetchProfessionals() }
+        .onAppear {
+            fetchProfessionals()
+        }
         .background(Color(red: 1.0, green: 0.97, blue: 0.99))
     }
 
-    // MARK: - Firestore
+    // MARK: Firestore
 
     private func fetchProfessionals() {
         isLoading = true
@@ -176,51 +225,94 @@ struct HomeView: View {
         Firestore.firestore()
             .collection("beautyProfessionals")
             .getDocuments { snapshot, _ in
-                isLoading = false
-                let docs = snapshot?.documents ?? []
 
-                professionals = docs.compactMap { doc in
+                let docs = snapshot?.documents ?? []
+                let group = DispatchGroup()
+
+                var loaded: [Professional] = []
+
+                for doc in docs {
                     let data = doc.data()
+                    let proID = doc.documentID
+
                     let fullName = data["fullName"] as? String ?? ""
                     let email = data["email"] as? String ?? ""
                     let displayName = fullName.isEmpty ? email : fullName
-                    guard !displayName.isEmpty else { return nil }
-                    return Professional(
-                        id: doc.documentID,
-                        name: displayName,
-                        role: data["specialty"] as? String ?? "Beauty Pro",
-                        rating: 0.0,
-                        priceFrom: data["priceFrom"] as? Double ?? 0,
-                        profileImageBase64: data["profileImageBase64"] as? String
-                    )
+
+                    guard !displayName.isEmpty else { continue }
+
+                    group.enter()
+
+                    Firestore.firestore()
+                        .collection("proServices")
+                        .whereField("proUserID", isEqualTo: proID)
+                        .getDocuments { serviceSnap, _ in
+
+                            let prices: [Double] = (serviceSnap?.documents ?? []).compactMap { sdoc in
+                                let val = sdoc.data()["price"]
+
+                                if let d = val as? Double { return d }
+                                if let i = val as? Int { return Double(i) }
+                                if let s = val as? String {
+                                    let clean = s.replacingOccurrences(of: "$", with: "")
+                                    return Double(clean)
+                                }
+
+                                return nil
+                            }
+
+                            let startPrice = prices.min() ?? 0
+
+                            loaded.append(
+                                Professional(
+                                    id: proID,
+                                    name: displayName,
+                                    role: data["specialty"] as? String ?? "Beauty Pro",
+                                    rating: 0,
+                                    priceFrom: startPrice,
+                                    profileImageBase64: data["profileImageBase64"] as? String
+                                )
+                            )
+
+                            group.leave()
+                        }
                 }
 
-                fetchRatings()
+                group.notify(queue: .main) {
+                    professionals = loaded
+                    isLoading = false
+                    fetchRatings()
+                }
             }
     }
-
     private func fetchRatings() {
         let db = Firestore.firestore()
+
         for pro in professionals {
             db.collection("reviews")
                 .whereField("proUserID", isEqualTo: pro.id)
                 .getDocuments { snapshot, _ in
                     guard let docs = snapshot?.documents else { return }
+
                     let ratings = docs.compactMap { doc -> Double? in
                         let val = doc["rating"]
+
                         if let d = val as? Double { return d }
                         if let i = val as? Int { return Double(i) }
+
                         return nil
                     }
+
                     if !ratings.isEmpty {
-                        ratingsMap[pro.id] = ratings.reduce(0, +) / Double(ratings.count)
+                        ratingsMap[pro.id] =
+                            ratings.reduce(0, +) / Double(ratings.count)
                     }
                 }
         }
     }
 }
 
-// MARK: - Models
+// MARK: Models
 
 struct Professional: Identifiable, Hashable {
     let id: String
@@ -230,11 +322,16 @@ struct Professional: Identifiable, Hashable {
     let priceFrom: Double
     let profileImageBase64: String?
 
-    func hash(into hasher: inout Hasher) { hasher.combine(id) }
-    static func == (lhs: Professional, rhs: Professional) -> Bool { lhs.id == rhs.id }
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+
+    static func == (lhs: Professional, rhs: Professional) -> Bool {
+        lhs.id == rhs.id
+    }
 }
 
-// MARK: - Filter button
+// MARK: Filter Button
 
 struct SlimFilterDropdownButton: View {
     let title: String
@@ -242,21 +339,30 @@ struct SlimFilterDropdownButton: View {
 
     var body: some View {
         HStack(spacing: 5) {
-            Text(title).font(.subheadline).fontWeight(.medium).lineLimit(1)
-            Image(systemName: "chevron.down").font(.system(size: 10, weight: .semibold))
+            Text(title)
+                .font(.subheadline)
+                .fontWeight(.medium)
+
+            Image(systemName: "chevron.down")
+                .font(.system(size: 10, weight: .semibold))
         }
         .foregroundColor(isActive ? .white : .pink)
         .frame(maxWidth: .infinity)
         .padding(.vertical, 11)
         .background(isActive ? Color.pink : Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.pink.opacity(isActive ? 0 : 0.18), lineWidth: 1))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(
+                    Color.pink.opacity(isActive ? 0 : 0.18),
+                    lineWidth: 1
+                )
+        )
         .shadow(color: .black.opacity(0.03), radius: 4, x: 0, y: 2)
-        .animation(.easeInOut(duration: 0.18), value: isActive)
     }
 }
 
-// MARK: - Professional card
+// MARK: Card Row
 
 struct ProCardRow: View {
     let name: String
@@ -267,20 +373,24 @@ struct ProCardRow: View {
 
     var body: some View {
         HStack(spacing: 14) {
-            // Avatar
+
             Group {
                 if let base64 = profileImageBase64,
                    let data = Data(base64Encoded: base64),
                    let img = UIImage(data: data) {
+
                     Image(uiImage: img)
                         .resizable()
                         .scaledToFill()
+
                 } else {
                     Circle()
                         .fill(Color.pink.opacity(0.18))
                         .overlay(
                             Text(String(name.prefix(1)))
-                                .font(.title3).fontWeight(.bold).foregroundColor(.pink)
+                                .font(.title3)
+                                .fontWeight(.bold)
+                                .foregroundColor(.pink)
                         )
                 }
             }
@@ -288,12 +398,21 @@ struct ProCardRow: View {
             .clipShape(Circle())
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(name).font(.headline)
-                Text(role).font(.subheadline).foregroundColor(.secondary)
+                Text(name)
+                    .font(.headline)
+
+                Text(role)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+
                 if rating > 0 {
-                    Text("★ \(rating, specifier: "%.1f")").font(.subheadline).foregroundColor(.secondary)
+                    Text("★ \(rating, specifier: "%.1f")")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
                 } else {
-                    Text("New").font(.subheadline).foregroundColor(.secondary)
+                    Text("New")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
                 }
             }
 
@@ -301,7 +420,9 @@ struct ProCardRow: View {
 
             if priceFrom > 0 {
                 Text("From $\(Int(priceFrom))")
-                    .foregroundColor(.pink).fontWeight(.bold).font(.subheadline)
+                    .font(.subheadline)
+                    .fontWeight(.bold)
+                    .foregroundColor(.pink)
             }
         }
         .padding()

@@ -1,5 +1,6 @@
+// Kashfi - Created the template file with dummy buttons and navigation
 // Melissa - Made the beauty pro dashboard functional with Firestore profile, quick action navigation, and logout.
-// Updated with Firestore booking request backend
+// Kashfi - Updated with Firestore booking request backend
 
 import SwiftUI
 import FirebaseAuth
