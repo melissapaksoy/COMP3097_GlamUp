@@ -1,3 +1,4 @@
+// Meric — Refined UI: auth-bg, shared GlamUpAuthLogo/AuthScreenChrome, welcome title + logo layout.
 // Kashfi - Created the template file with dummy buttons and navigation
 // Melissa - Created login screen with Firebase auth and role-based navigation to client, pro, or admin dashboard.
 
@@ -23,8 +24,17 @@ struct LoginView: View {
 
     var body: some View {
         NavigationStack(path: $path) {
-            ScrollView {
-                VStack(spacing: 16) {
+            ZStack {
+                Image("auth-bg")
+                    .resizable()
+                    .scaledToFill()
+                    .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
+                    .clipped()
+                    .ignoresSafeArea()
+                    .accessibilityHidden(true)
+
+                ScrollView {
+                    VStack(spacing: AuthScreenChrome.stackSpacing) {
                     // Back button to match RegisterView
                     HStack {
                         BackPillButton { dismiss() }
@@ -32,9 +42,13 @@ struct LoginView: View {
                     }
 
                     // Title to match RegisterView styling
-                    Text("Welcome to GlamUp!")
+                    Text("Welcome to")
                         .font(.title2).bold()
                         .foregroundStyle(.pink)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, AuthScreenChrome.titleTopPadding)
+
+                    GlamUpAuthLogo()
 
                     // Fields styled like RegisterView (roundedBorder)
                     // Email
@@ -95,11 +109,12 @@ struct LoginView: View {
                     .padding(.top, 4)
 
                     Spacer(minLength: 0)
+                    }
+                    .padding(.horizontal, AuthScreenChrome.horizontalPadding)
+                    .padding(.vertical, AuthScreenChrome.verticalPadding)
                 }
-                .padding(20)
             }
             .navigationBarHidden(true)
-            .background(Color(red: 1.0, green: 0.97, blue: 0.99))
             .navigationDestination(for: Destination.self) { dest in
                 switch dest {
                 case .admin:
