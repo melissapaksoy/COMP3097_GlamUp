@@ -1,0 +1,32 @@
+rules_version = '2';
+
+// Deploy with: firebase deploy --only firestore:rules
+// The iOS app registers users at users/{uid} (see AuthViewModel.register / AuthService).
+// Listing the `users` collection for a total count requires admins to pass the `isAdmin()` check below.
+// If you only allow reads on users/{ownUid}, collection listeners and getDocuments() on `users` will fail with permission denied.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    match /users/{userId} {
+      allow read: if signedIn() && (request.auth.uid == userId || isAdmin());
+      allow create: if signedIn() && request.auth.uid == userId;
+      allow update, delete: if signedIn() && request.auth.uid == userId;
+    }
+
+    // Other collections used by the app (adjust tightening for production).
+    match /{document=**} {
+      allow read, write: if signedIn();
+    }
+  }
+}
