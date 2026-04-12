@@ -1,7 +1,6 @@
 // Meric — Admin: create Firebase Auth + Firestore user
 
 import SwiftUI
-import FirebaseAuth
 
 private extension AppUserRole {
     var addUserPickerTitle: String {
@@ -24,6 +23,7 @@ struct AdminAddUserView: View {
     @State private var selectedRole: AppUserRole = .client
     @State private var isLoading = false
     @State private var errorMessage: String?
+    @State private var showUserCreatedAlert = false
 
     private let screenBackground = Color(red: 1.0, green: 0.97, blue: 0.99)
 
@@ -90,6 +90,11 @@ struct AdminAddUserView: View {
         } message: { msg in
             Text(msg)
         }
+        .alert("User created", isPresented: $showUserCreatedAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("The new account is ready. They can sign in with the email and password you set.")
+        }
     }
 
     @ViewBuilder
@@ -117,6 +122,7 @@ struct AdminAddUserView: View {
             errorMessage = "Please fill in all fields."
             return
         }
+        guard !isLoading else { return }
 
         isLoading = true
         defer { isLoading = false }
@@ -128,14 +134,13 @@ struct AdminAddUserView: View {
                 fullName: trimmedName,
                 role: selectedRole
             )
-            authVM.loginBannerMessage = "New user added. Sign in again with your admin account."
+            fullName = ""
+            email = ""
+            password = ""
+            selectedRole = .client
+            showUserCreatedAlert = true
         } catch {
-            let text = friendlyError(error.localizedDescription)
-            if Auth.auth().currentUser == nil {
-                authVM.authErrorMessage = text
-            } else {
-                errorMessage = text
-            }
+            errorMessage = friendlyError(error.localizedDescription)
         }
     }
 

@@ -3,6 +3,7 @@
 
 import Foundation
 import FirebaseAuth
+import FirebaseCore
 import FirebaseFirestore
 
 // Represents the roles used throughout the app
@@ -87,6 +88,31 @@ final class AuthService {
 
     private let auth = Auth.auth()
     private let db = Firestore.firestore()
+
+    /// Secondary Firebase app so `createUser` does not replace the default (admin) session.
+    private static let secondaryAuthAppName = "GlamUpAdminCreateUser"
+
+    private func authForCreatingUsers() throws -> Auth {
+        if let existing = FirebaseApp.app(name: Self.secondaryAuthAppName) {
+            return Auth.auth(app: existing)
+        }
+        guard let defaultApp = FirebaseApp.app() else {
+            throw NSError(
+                domain: "GlamUp.AdminUsers",
+                code: 0,
+                userInfo: [NSLocalizedDescriptionKey: "Firebase is not configured."]
+            )
+        }
+        FirebaseApp.configure(name: Self.secondaryAuthAppName, options: defaultApp.options)
+        guard let secondaryApp = FirebaseApp.app(name: Self.secondaryAuthAppName) else {
+            throw NSError(
+                domain: "GlamUp.AdminUsers",
+                code: 0,
+                userInfo: [NSLocalizedDescriptionKey: "Could not set up secondary Firebase app."]
+            )
+        }
+        return Auth.auth(app: secondaryApp)
+    }
 
     /// Signs in with email and password, then fetches the user's role from Firestore.
     /// Expects a document at `users/{uid}` with a `role` string field of values: "admin", "beautyPro", or "client".
@@ -199,7 +225,7 @@ final class AuthService {
     // MARK: - Admin user management
 
     /// Creates a new Firebase Auth user plus `users` (and `beautyProfessionals` when needed).
-    /// `createUser` switches the session to the new account; this method signs out afterward so the admin signs in again on the login screen.
+    /// Uses a secondary `Auth` instance so the admin stays signed in on the default app.
     func createUserAsAdmin(
         newEmail: String,
         newPassword: String,
@@ -214,8 +240,14 @@ final class AuthService {
             )
         }
 
-        _ = try await auth.createUser(withEmail: newEmail, password: newPassword)
-        let newUid = auth.currentUser?.uid ?? ""
+        let creationAuth = try authForCreatingUsers()
+        if creationAuth.currentUser != nil {
+            try creationAuth.signOut()
+        }
+
+        let result = try await creationAuth.createUser(withEmail: newEmail, password: newPassword)
+        let newUid = result.user.uid
+        try? creationAuth.signOut()
 
         guard !newUid.isEmpty else {
             throw NSError(
@@ -245,11 +277,8 @@ final class AuthService {
                 ])
             }
         } catch {
-            try? auth.signOut()
             throw error
         }
-
-        try auth.signOut()
     }
 
     func setUserBlocked(uid: String, blocked: Bool) async throws {

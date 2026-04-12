@@ -16,7 +16,7 @@ final class AuthViewModel: ObservableObject {
     @Published var currentUser: User?
     @Published var userRole: UserRole?
     @Published var authErrorMessage: String?
-    /// Shown on the login screen after admin adds a user (session ends until admin signs in again).
+    /// Optional banner on the login screen (e.g. post-registration messaging).
     @Published var loginBannerMessage: String?
     @Published var didCompleteRegistration = false
     @Published var isLoadingRole = false
