@@ -18,6 +18,7 @@ struct BookingAppointmentView: View {
     let proName: String
     let proUserID: String
     let isBeautyPro: Bool
+    var dismissToRoot: (() -> Void)? = nil
 
     @State private var services: [String] = []
     @State private var selectedService = ""
@@ -176,7 +177,8 @@ struct BookingAppointmentView: View {
             BookingConfirmationView(
                 service: selectedService,
                 date: selectedDate,
-                time: selectedTime ?? "—"
+                time: selectedTime ?? "—",
+                dismissToRoot: dismissToRoot
             )
         }
     }

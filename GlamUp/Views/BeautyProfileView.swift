@@ -11,6 +11,7 @@ struct BeautyProfileView: View {
     let proUserID: String
     let proName: String
     let proRole: String
+    var dismissToRoot: (() -> Void)? = nil
 
     // Profile
     @State private var bio: String = ""
@@ -236,7 +237,7 @@ struct BeautyProfileView: View {
             }
         }
         .navigationDestination(isPresented: $goToBooking) {
-            BookingAppointmentView(proName: proName, proUserID: proUserID, isBeautyPro: false)
+            BookingAppointmentView(proName: proName, proUserID: proUserID, isBeautyPro: false, dismissToRoot: dismissToRoot)
         }
     }
 
