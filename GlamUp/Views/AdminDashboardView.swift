@@ -1,27 +1,38 @@
+// Meric — Admin dashboard UI (layout, stat cards, Quick Actions cleanup)
+// Meric - Wired Firestore metrics for Total Users and Active Bookings (AuthService + AdminDashboardViewModel)
 // Kashfi - Created the template file with dummy buttons and navigation
 // Melissa - Created the admin dashboard UI with metric cards, disputes list, quick actions, and logout.
 
+
 import SwiftUI
+
+// MARK: - GlamUp surfaces (aligned with HomeView / ProCardRow)
+
+private enum GlamUpSurface {
+    /// Same soft tint as `HomeView` scroll background.
+    static let screenBackground = Color(red: 1.0, green: 0.97, blue: 0.99)
+    static let cardFill = Color.white
+    static let cardCornerRadius: CGFloat = 18
+    static let actionCornerRadius: CGFloat = 14
+    static let cardShadowColor = Color.black.opacity(0.04)
+    static let cardShadowRadius: CGFloat = 6
+    static let cardShadowY: CGFloat = 3
+    static let outlinePink = Color.pink.opacity(0.18)
+}
 
 private enum AdminPanelLayout {
     static let sectionSpacing: CGFloat = 20
     static let cardSpacing: CGFloat = 12
     static let headerToContentSpacing: CGFloat = 12
     static let cardPadding: CGFloat = 16
-    static let cornerRadius: CGFloat = 12
+    static let cornerRadius: CGFloat = GlamUpSurface.cardCornerRadius
     static let listRowSpacing: CGFloat = 12
     static let actionButtonMinHeight: CGFloat = 48
-    /// Shared outer height for the four top stat cards (metric + small) so the grid is uniform.
     static let statCardHeight: CGFloat = 136
-    /// Reserved width for the SF Symbol so labels never collide with glyphs (incl. complex symbols).
     static let statIconSlotWidth: CGFloat = 36
-    /// Horizontal gap between icon slot and label.
     static let statIconLabelSpacing: CGFloat = 8
-    /// Fixed-height bottom band: avoids an inner `Spacer` competing with the middle flex region (which was collapsing the center strip).
     static let statHelperBandHeight: CGFloat = 44
-    /// Nudges the main stat figure slightly lower in the middle band (optical adjustment).
     static let statValueTopPadding: CGFloat = 24
-    /// Dispute row content rhythm.
     static let disputeTitleToDetailSpacing: CGFloat = 8
     static let disputeDetailToTimeSpacing: CGFloat = 6
 }
@@ -50,15 +61,14 @@ struct AdminDashboardView: View {
                         title: "Total Users",
                         value: adminMetrics.totalUsersDisplayValue,
                         delta: "Live count from Firestore",
-                        deltaColor: .secondary,
-                        deltaMuted: false,
+                        deltaColor: .green,
                         symbol: "person.3.fill"
                     )
 
                     MetricCard(
                         title: "Active Bookings",
-                        value: "1,234",
-                        delta: "+1.1% from last week",
+                        value: adminMetrics.activeBookingsDisplayValue,
+                        delta: "Pending & approved",
                         deltaColor: .green,
                         symbol: "calendar.badge.clock"
                     )
@@ -94,7 +104,8 @@ struct AdminDashboardView: View {
                             // add action later
                         }
                         .font(.subheadline)
-                        .fontWeight(.medium)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.pink)
                         .lineLimit(1)
                     }
 
@@ -133,13 +144,31 @@ struct AdminDashboardView: View {
                         columns: Array(repeating: GridItem(.flexible(), spacing: AdminPanelLayout.cardSpacing), count: 2),
                         spacing: AdminPanelLayout.cardSpacing
                     ) {
-                        ActionButton(title: "Add User", systemImage: "person.badge.plus") {}
-                        ActionButton(title: "Block User", systemImage: "person.fill.xmark") {}
+                        NavigationLink {
+                            AdminAddUserView()
+                        } label: {
+                            QuickActionTile(title: "Add User", systemImage: "person.badge.plus")
+                        }
+                        .buttonStyle(.plain)
+                        NavigationLink {
+                            AdminBlockUserView()
+                        } label: {
+                            QuickActionTile(title: "Block User", systemImage: "person.fill.xmark")
+                        }
+                        .buttonStyle(.plain)
                         ActionButton(title: "Reports", systemImage: "doc.text.magnifyingglass") {}
-                        ActionButton(title: "Settings", systemImage: "gearshape") {}
-                        ActionButton(title: "Dashboard", systemImage: "rectangle.grid.2x2") {}
-                        ActionButton(title: "Users", systemImage: "person.2") {}
-                        ActionButton(title: "Bookings", systemImage: "calendar") {}
+                        NavigationLink {
+                            AdminUsersListView()
+                        } label: {
+                            QuickActionTile(title: "Users", systemImage: "person.2")
+                        }
+                        .buttonStyle(.plain)
+                        NavigationLink {
+                            AdminBookingsListView()
+                        } label: {
+                            QuickActionTile(title: "Bookings", systemImage: "calendar")
+                        }
+                        .buttonStyle(.plain)
                         ActionButton(title: "Disputes", systemImage: "exclamationmark.bubble") {}
                     }
                 }
@@ -151,24 +180,21 @@ struct AdminDashboardView: View {
         .navigationTitle("Admin Panel")
         .navigationBarTitleDisplayMode(.large)
         .navigationBarBackButtonHidden(true)
-        .onAppear { adminMetrics.startObservingTotalUsers() }
-        .onDisappear { adminMetrics.stopObservingTotalUsers() }
+        .onAppear { adminMetrics.startObservingDashboardMetrics() }
+        .onDisappear { adminMetrics.stopObservingDashboardMetrics() }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Logout") {
                     authVM.signOut()
                 }
-                .font(.body)
+                .font(.body.weight(.semibold))
                 .foregroundStyle(.pink)
             }
         }
+        .background(GlamUpSurface.screenBackground)
     }
 }
 
-/// Three vertical zones: top (icon + label), middle (all remaining height — value vertically centered), bottom (fixed band, helper bottom-aligned).
-///
-/// Layout note: A bottom `VStack { Spacer(); helper }.frame(minHeight:)` has no max height, so the inner `Spacer` can expand and steal **all**
-/// flexible space from the middle — leaving no room for the centered number. The bottom band is therefore a **fixed height** with `.bottom` alignment.
 private struct AdminStatCardLayout<Helper: View>: View {
     let symbol: String
     let title: String
@@ -180,7 +206,7 @@ private struct AdminStatCardLayout<Helper: View>: View {
             HStack(alignment: .top, spacing: AdminPanelLayout.statIconLabelSpacing) {
                 Image(systemName: symbol)
                     .font(.title3)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.pink.opacity(0.55))
                     .frame(width: AdminPanelLayout.statIconSlotWidth, alignment: .center)
                 Text(title)
                     .font(AdminCardTypography.statLabel)
@@ -212,9 +238,13 @@ private struct AdminStatCardLayout<Helper: View>: View {
         }
         .padding(AdminPanelLayout.cardPadding)
         .frame(maxWidth: .infinity, minHeight: AdminPanelLayout.statCardHeight, maxHeight: AdminPanelLayout.statCardHeight, alignment: .topLeading)
-        .background(
-            RoundedRectangle(cornerRadius: AdminPanelLayout.cornerRadius, style: .continuous)
-                .fill(.thinMaterial)
+        .background(GlamUpSurface.cardFill)
+        .clipShape(RoundedRectangle(cornerRadius: AdminPanelLayout.cornerRadius, style: .continuous))
+        .shadow(
+            color: GlamUpSurface.cardShadowColor,
+            radius: GlamUpSurface.cardShadowRadius,
+            x: 0,
+            y: GlamUpSurface.cardShadowY
         )
     }
 }
@@ -224,7 +254,6 @@ private struct MetricCard: View {
     let value: String
     let delta: String
     let deltaColor: Color
-    /// When `true`, delta uses a softer opacity (used for secondary trend-style copy).
     var deltaMuted: Bool = true
     let symbol: String
 
@@ -252,7 +281,7 @@ private struct SmallCard: View {
             Text(subtitle)
                 .font(AdminCardTypography.meta)
                 .fontWeight(.regular)
-                .foregroundStyle(.red)
+                .foregroundStyle(Color.red.opacity(0.82))
                 .lineLimit(2)
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
@@ -273,9 +302,9 @@ private struct DisputeRow: View {
         case "medium":
             return .orange
         case "low":
-            return .gray
+            return .pink
         default:
-            return .gray
+            return .pink.opacity(0.65)
         }
     }
 
@@ -293,13 +322,13 @@ private struct DisputeRow: View {
 
                 Text(priority)
                     .font(AdminCardTypography.meta)
-                    .fontWeight(.medium)
-                    .foregroundStyle(priorityColor.opacity(0.85))
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 3)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(priorityColor)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
                     .background(
                         Capsule(style: .continuous)
-                            .fill(priorityColor.opacity(0.14))
+                            .fill(priorityColor.opacity(0.12))
                     )
                     .lineLimit(1)
                     .fixedSize(horizontal: true, vertical: false)
@@ -321,9 +350,48 @@ private struct DisputeRow: View {
         }
         .padding(AdminPanelLayout.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: AdminPanelLayout.cornerRadius, style: .continuous)
-                .fill(.thinMaterial)
+        .background(GlamUpSurface.cardFill)
+        .clipShape(RoundedRectangle(cornerRadius: AdminPanelLayout.cornerRadius, style: .continuous))
+        .shadow(
+            color: GlamUpSurface.cardShadowColor,
+            radius: GlamUpSurface.cardShadowRadius,
+            x: 0,
+            y: GlamUpSurface.cardShadowY
+        )
+    }
+}
+
+private struct QuickActionTile: View {
+    let title: String
+    let systemImage: String
+
+    var body: some View {
+        HStack(spacing: AdminPanelLayout.cardSpacing) {
+            Image(systemName: systemImage)
+                .font(.body)
+                .foregroundStyle(.pink.opacity(0.75))
+                .frame(width: 22, alignment: .center)
+            Text(title)
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundStyle(.primary)
+                .multilineTextAlignment(.leading)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, AdminPanelLayout.cardPadding)
+        .padding(.vertical, 14)
+        .frame(maxWidth: .infinity, minHeight: AdminPanelLayout.actionButtonMinHeight, alignment: .leading)
+        .background(GlamUpSurface.cardFill)
+        .clipShape(RoundedRectangle(cornerRadius: GlamUpSurface.actionCornerRadius, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: GlamUpSurface.actionCornerRadius, style: .continuous)
+                .stroke(GlamUpSurface.outlinePink, lineWidth: 1)
+        )
+        .shadow(
+            color: GlamUpSurface.cardShadowColor,
+            radius: GlamUpSurface.cardShadowRadius,
+            x: 0,
+            y: GlamUpSurface.cardShadowY
         )
     }
 }
@@ -335,23 +403,7 @@ private struct ActionButton: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: AdminPanelLayout.cardSpacing) {
-                Image(systemName: systemImage)
-                    .font(.body)
-                    .frame(width: 22, alignment: .center)
-                Text(title)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .multilineTextAlignment(.leading)
-                Spacer(minLength: 0)
-            }
-            .padding(.horizontal, AdminPanelLayout.cardPadding)
-            .padding(.vertical, 14)
-            .frame(maxWidth: .infinity, minHeight: AdminPanelLayout.actionButtonMinHeight, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: AdminPanelLayout.cornerRadius, style: .continuous)
-                    .fill(Color(.secondarySystemBackground))
-            )
+            QuickActionTile(title: title, systemImage: systemImage)
         }
         .buttonStyle(.plain)
     }

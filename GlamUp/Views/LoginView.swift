@@ -1,3 +1,4 @@
+// Meric — Refined UI: auth-bg, shared GlamUpAuthLogo/AuthScreenChrome, welcome title + logo layout.
 // Kashfi - Created the template file with dummy buttons and navigation
 // Melissa - Created login screen with Firebase auth and role-based navigation to client, pro, or admin dashboard.
 
@@ -16,25 +17,56 @@ struct LoginView: View {
     @State private var isLoading = false
     @State private var errorMessage: String?
 
-    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var authVM: AuthViewModel
 
     @State private var email: String = ""
     @State private var password: String = ""
 
     var body: some View {
         NavigationStack(path: $path) {
-            ScrollView {
-                VStack(spacing: 16) {
-                    // Back button to match RegisterView
-                    HStack {
-                        BackPillButton { dismiss() }
-                        Spacer()
-                    }
+            ZStack {
+                Image("auth-bg")
+                    .resizable()
+                    .scaledToFill()
+                    .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
+                    .clipped()
+                    .ignoresSafeArea()
+                    .accessibilityHidden(true)
 
+                ScrollView {
+                    VStack(spacing: AuthScreenChrome.stackSpacing) {
                     // Title to match RegisterView styling
-                    Text("Welcome to GlamUp!")
+                    Text("Welcome to")
                         .font(.title2).bold()
                         .foregroundStyle(.pink)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, AuthScreenChrome.titleTopPadding)
+
+                    GlamUpAuthLogo()
+
+                    if let sessionMsg = authVM.authErrorMessage, !sessionMsg.isEmpty {
+                        Text(sessionMsg)
+                            .font(.subheadline)
+                            .foregroundStyle(.red)
+                            .multilineTextAlignment(.center)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .padding(.horizontal, 12)
+                            .background(Color.white.opacity(0.92))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+
+                    if let banner = authVM.loginBannerMessage, !banner.isEmpty {
+                        Text(banner)
+                            .font(.subheadline)
+                            .foregroundStyle(.pink)
+                            .multilineTextAlignment(.center)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .padding(.horizontal, 12)
+                            .background(Color.white.opacity(0.92))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
 
                     // Fields styled like RegisterView (roundedBorder)
                     // Email
@@ -95,11 +127,12 @@ struct LoginView: View {
                     .padding(.top, 4)
 
                     Spacer(minLength: 0)
+                    }
+                    .padding(.horizontal, AuthScreenChrome.horizontalPadding)
+                    .padding(.vertical, AuthScreenChrome.verticalPadding)
                 }
-                .padding(20)
             }
             .navigationBarHidden(true)
-            .background(Color(red: 1.0, green: 0.97, blue: 0.99))
             .navigationDestination(for: Destination.self) { dest in
                 switch dest {
                 case .admin:
@@ -123,6 +156,8 @@ struct LoginView: View {
             errorMessage = "Please enter email and password"
             return
         }
+        authVM.loginBannerMessage = nil
+        authVM.authErrorMessage = nil
         isLoading = true
         defer { isLoading = false }
         do {
@@ -143,5 +178,6 @@ struct LoginView: View {
 
 #Preview {
     LoginView()
+        .environmentObject(AuthViewModel())
 }
 

@@ -2,8 +2,10 @@ rules_version = '2';
 
 // Deploy with: firebase deploy --only firestore:rules
 // The iOS app registers users at users/{uid} (see AuthViewModel.register / AuthService).
+// Admins may set `blocked: true` on a user doc (AdminBlockUserView); sign-in then refuses that account.
 // Listing the `users` collection for a total count requires admins to pass the `isAdmin()` check below.
 // If you only allow reads on users/{ownUid}, collection listeners and getDocuments() on `users` will fail with permission denied.
+// Bookings live in `bookings` (BookingView / BeautyProDashboardView). Admin active count uses whereField("status", in: ["pending","approved"]).
 
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -20,8 +22,10 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read: if signedIn() && (request.auth.uid == userId || isAdmin());
-      allow create: if signedIn() && request.auth.uid == userId;
-      allow update, delete: if signedIn() && request.auth.uid == userId;
+      // Self-registration creates users/{ownUid}. Admins create profiles for new accounts (uid ≠ admin).
+      allow create: if signedIn() && (request.auth.uid == userId || isAdmin());
+      // Users edit own profile; admins update any user (e.g. blocked flag).
+      allow update, delete: if signedIn() && (request.auth.uid == userId || isAdmin());
     }
 
     // Other collections used by the app (adjust tightening for production).
