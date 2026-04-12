@@ -144,11 +144,31 @@ struct AdminDashboardView: View {
                         columns: Array(repeating: GridItem(.flexible(), spacing: AdminPanelLayout.cardSpacing), count: 2),
                         spacing: AdminPanelLayout.cardSpacing
                     ) {
-                        ActionButton(title: "Add User", systemImage: "person.badge.plus") {}
-                        ActionButton(title: "Block User", systemImage: "person.fill.xmark") {}
+                        NavigationLink {
+                            AdminAddUserView()
+                        } label: {
+                            QuickActionTile(title: "Add User", systemImage: "person.badge.plus")
+                        }
+                        .buttonStyle(.plain)
+                        NavigationLink {
+                            AdminBlockUserView()
+                        } label: {
+                            QuickActionTile(title: "Block User", systemImage: "person.fill.xmark")
+                        }
+                        .buttonStyle(.plain)
                         ActionButton(title: "Reports", systemImage: "doc.text.magnifyingglass") {}
-                        ActionButton(title: "Users", systemImage: "person.2") {}
-                        ActionButton(title: "Bookings", systemImage: "calendar") {}
+                        NavigationLink {
+                            AdminUsersListView()
+                        } label: {
+                            QuickActionTile(title: "Users", systemImage: "person.2")
+                        }
+                        .buttonStyle(.plain)
+                        NavigationLink {
+                            AdminBookingsListView()
+                        } label: {
+                            QuickActionTile(title: "Bookings", systemImage: "calendar")
+                        }
+                        .buttonStyle(.plain)
                         ActionButton(title: "Disputes", systemImage: "exclamationmark.bubble") {}
                     }
                 }
@@ -341,6 +361,41 @@ private struct DisputeRow: View {
     }
 }
 
+private struct QuickActionTile: View {
+    let title: String
+    let systemImage: String
+
+    var body: some View {
+        HStack(spacing: AdminPanelLayout.cardSpacing) {
+            Image(systemName: systemImage)
+                .font(.body)
+                .foregroundStyle(.pink.opacity(0.75))
+                .frame(width: 22, alignment: .center)
+            Text(title)
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundStyle(.primary)
+                .multilineTextAlignment(.leading)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, AdminPanelLayout.cardPadding)
+        .padding(.vertical, 14)
+        .frame(maxWidth: .infinity, minHeight: AdminPanelLayout.actionButtonMinHeight, alignment: .leading)
+        .background(GlamUpSurface.cardFill)
+        .clipShape(RoundedRectangle(cornerRadius: GlamUpSurface.actionCornerRadius, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: GlamUpSurface.actionCornerRadius, style: .continuous)
+                .stroke(GlamUpSurface.outlinePink, lineWidth: 1)
+        )
+        .shadow(
+            color: GlamUpSurface.cardShadowColor,
+            radius: GlamUpSurface.cardShadowRadius,
+            x: 0,
+            y: GlamUpSurface.cardShadowY
+        )
+    }
+}
+
 private struct ActionButton: View {
     let title: String
     let systemImage: String
@@ -348,33 +403,7 @@ private struct ActionButton: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: AdminPanelLayout.cardSpacing) {
-                Image(systemName: systemImage)
-                    .font(.body)
-                    .foregroundStyle(.pink.opacity(0.75))
-                    .frame(width: 22, alignment: .center)
-                Text(title)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(.primary)
-                    .multilineTextAlignment(.leading)
-                Spacer(minLength: 0)
-            }
-            .padding(.horizontal, AdminPanelLayout.cardPadding)
-            .padding(.vertical, 14)
-            .frame(maxWidth: .infinity, minHeight: AdminPanelLayout.actionButtonMinHeight, alignment: .leading)
-            .background(GlamUpSurface.cardFill)
-            .clipShape(RoundedRectangle(cornerRadius: GlamUpSurface.actionCornerRadius, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: GlamUpSurface.actionCornerRadius, style: .continuous)
-                    .stroke(GlamUpSurface.outlinePink, lineWidth: 1)
-            )
-            .shadow(
-                color: GlamUpSurface.cardShadowColor,
-                radius: GlamUpSurface.cardShadowRadius,
-                x: 0,
-                y: GlamUpSurface.cardShadowY
-            )
+            QuickActionTile(title: title, systemImage: systemImage)
         }
         .buttonStyle(.plain)
     }

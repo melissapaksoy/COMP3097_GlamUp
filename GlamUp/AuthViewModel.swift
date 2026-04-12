@@ -16,6 +16,8 @@ final class AuthViewModel: ObservableObject {
     @Published var currentUser: User?
     @Published var userRole: UserRole?
     @Published var authErrorMessage: String?
+    /// Shown on the login screen after admin adds a user (session ends until admin signs in again).
+    @Published var loginBannerMessage: String?
     @Published var didCompleteRegistration = false
     @Published var isLoadingRole = false
 
@@ -39,6 +41,7 @@ final class AuthViewModel: ObservableObject {
             currentUser = nil
             userRole = nil
             authErrorMessage = nil
+            loginBannerMessage = nil
             isLoadingRole = false
             print("✅ Forced logout on app launch")
         } catch {
@@ -52,7 +55,10 @@ final class AuthViewModel: ObservableObject {
 
             Task { @MainActor in
                 self.currentUser = user
-                self.authErrorMessage = nil
+                if user != nil {
+                    self.authErrorMessage = nil
+                    self.loginBannerMessage = nil
+                }
 
                 if let uid = user?.uid {
                     await self.loadUserRole(uid: uid)
@@ -73,8 +79,22 @@ final class AuthViewModel: ObservableObject {
                 .document(uid)
                 .getDocument()
 
+            guard let data = snapshot.data() else {
+                self.userRole = nil
+                self.authErrorMessage = "User role not found."
+                self.isLoadingRole = false
+                return
+            }
+
+            if data["blocked"] as? Bool == true {
+                self.userRole = nil
+                self.authErrorMessage = "This account has been disabled."
+                self.isLoadingRole = false
+                try? Auth.auth().signOut()
+                return
+            }
+
             guard
-                let data = snapshot.data(),
                 let roleRaw = data["role"] as? String,
                 let role = UserRole(rawValue: roleRaw)
             else {
@@ -108,6 +128,7 @@ final class AuthViewModel: ObservableObject {
                     "role": role.rawValue,
                     "email": email,
                     "fullName": fullName,
+                    "blocked": false,
                     "createdAt": FieldValue.serverTimestamp()
                 ])
 
@@ -137,6 +158,7 @@ final class AuthViewModel: ObservableObject {
 
     func signIn(email: String, password: String) async {
         authErrorMessage = nil
+        loginBannerMessage = nil
 
         do {
             let result = try await Auth.auth().signIn(withEmail: email, password: password)
@@ -152,6 +174,7 @@ final class AuthViewModel: ObservableObject {
             currentUser = nil
             userRole = nil
             authErrorMessage = nil
+            loginBannerMessage = nil
             isLoadingRole = false
         } catch {
             authErrorMessage = error.localizedDescription
