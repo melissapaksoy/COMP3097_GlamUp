@@ -1,16 +1,4 @@
-// ============================================================
-// SetAvailabilityView.swift — Melissa's changes
-// ============================================================
-// - Created this screen so beauty pros can set their weekly schedule.
-// - Each day (Mon–Sun) has a toggle; turning it on reveals
-//   open/close hour pickers (6 AM – 10 PM range).
-// - DayAvailability struct defined here — also shared with
-//   BeautyProfileView so clients can see the pro's hours.
-// - loadAvailability() pre-fills from "availability/{uid}" in Firestore.
-// - saveAvailability() writes all 7 days to Firestore and shows
-//   a green success message for 3 seconds.
-// - Day rows animate smoothly when toggled.
-// ============================================================
+// Melissa - Created availability screen so beauty pros can set their weekly hours, saved to Firestore.
 
 import SwiftUI
 import FirebaseFirestore

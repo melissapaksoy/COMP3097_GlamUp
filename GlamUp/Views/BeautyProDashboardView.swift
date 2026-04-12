@@ -1,18 +1,4 @@
-// ============================================================
-// BeautyProDashboardView.swift — Melissa's changes
-// ============================================================
-// - Made the beauty pro dashboard fully functional with navigation.
-// - Added profile header with name and avatar loaded from Firestore.
-// - Added Quick Actions grid linking to: Manage Services,
-//   Set Availability, Portfolio, and Ratings & Reviews.
-// - Added New Requests section with accept/decline buttons.
-// - Added Edit Profile button that goes to EditProfileView.
-// - fetchProInfo() loads the pro's name + profile photo from
-//   "beautyProfessionals" collection; shows initials as fallback.
-// - Fixed proUID not being set before navigating to sub-screens.
-// - Moved data source from "users" to "beautyProfessionals" collection.
-// - Hooked up AuthViewModel + Logout button in the toolbar.
-// ============================================================
+// Melissa - Made the beauty pro dashboard functional with Firestore profile, quick action navigation, and logout.
 
 import SwiftUI
 import FirebaseAuth

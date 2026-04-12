@@ -1,18 +1,4 @@
-// ============================================================
-// EditProfileView.swift — Melissa's changes
-// ============================================================
-// - Created this screen so beauty pros can update their profile.
-// - Fields: full name, specialty (7 options), bio, starting price,
-//   and profile photo via PhotosPicker.
-// - loadProfile() pre-fills everything from Firestore on appear.
-// - Photo is resized to 400px max and saved as a base64 JPEG string.
-// - saveProfile() writes to "beautyProfessionals/{uid}" using
-//   merge: true so it doesn't wipe out other fields.
-// - Shows "Profile saved!" in green for 2 seconds after saving.
-// - Save is disabled if the name field is empty.
-// - Updated saveProfile() to also include uid + email so the
-//   Firestore doc stays complete and consistent.
-// ============================================================
+// Melissa - Created edit profile screen so beauty pros can update their name, bio, specialty, price, and photo.
 
 import SwiftUI
 import PhotosUI
