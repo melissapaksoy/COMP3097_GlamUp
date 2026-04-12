@@ -1,20 +1,4 @@
-// ============================================================
-// RegisterView.swift — Melissa's changes
-// ============================================================
-// - Built the registration screen with full name, email, password,
-//   and account type picker (Client / Beauty Pro).
-// - Calls authVM.register() to create the Firebase account and
-//   save the role to Firestore. Dismisses back to login on success.
-// - Fixed a bug where fullName was being collected but never
-//   actually passed to register() — so it was always saved as "".
-//   Now properly passes it so beauty pros show their real name.
-// - Added fullName validation so you can't register with a blank name.
-// - Added friendlyError() to translate Firebase error messages into
-//   something readable:
-//     • Duplicate email → "An account with this email already exists."
-//     • Bad email format → "Please enter a valid email address."
-//     • Weak password → "Password must be at least 6 characters."
-// ============================================================
+// Melissa - Built registration screen; fixed fullName not being saved and added friendly duplicate email error.
 
 import SwiftUI
 

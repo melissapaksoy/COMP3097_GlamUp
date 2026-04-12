@@ -1,18 +1,4 @@
-// ============================================================
-// AuthViewModel.swift — Melissa's changes
-// ============================================================
-// - Created this whole file — handles all the Firebase auth logic
-//   for the app (login, register, logout, role loading).
-// - Added UserRole enum with client, beautyPro, and admin cases.
-// - listenForAuthChanges() watches Firebase auth state and loads
-//   the user's role from Firestore automatically on sign-in.
-// - forceLogoutOnLaunch() so the app always starts at login screen.
-// - When a beauty pro registers, also creates a doc in
-//   "beautyProfessionals" with their uid, email, specialty, etc.
-// - Fixed fullName being saved as "" on registration — now
-//   properly saves the name they typed in the register form to
-//   both "users" and "beautyProfessionals" in Firestore.
-// ============================================================
+// Melissa - Created Firebase auth logic: login, register, logout, role-based routing, and fullName fix on registration.
 
 import SwiftUI
 import Combine
