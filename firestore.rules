@@ -22,8 +22,10 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read: if signedIn() && (request.auth.uid == userId || isAdmin());
-      allow create: if signedIn() && request.auth.uid == userId;
-      allow update, delete: if signedIn() && request.auth.uid == userId;
+      // Self-registration creates users/{ownUid}. Admins create profiles for new accounts (uid ≠ admin).
+      allow create: if signedIn() && (request.auth.uid == userId || isAdmin());
+      // Users edit own profile; admins update any user (e.g. blocked flag).
+      allow update, delete: if signedIn() && (request.auth.uid == userId || isAdmin());
     }
 
     // Other collections used by the app (adjust tightening for production).
