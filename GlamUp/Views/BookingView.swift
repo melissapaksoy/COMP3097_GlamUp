@@ -1,6 +1,12 @@
 // Kashfi - Created the template file with dummy buttons and navigation
 // Kashfi - Updated the UI
 // Kashfi - Updated with Firestore backend booking save flow
+// Updated: Confirmation page handles its own routing to Home
+// Updated: Services are fetched from beauty pro backend data
+
+
+// BookingAppointmentView.swift
+// Updated: BookingConfirmation is now a real pushed page (not sheet)
 
 import SwiftUI
 import FirebaseAuth
@@ -13,17 +19,12 @@ struct BookingAppointmentView: View {
     let proUserID: String
     let isBeautyPro: Bool
 
-    private let services = [
-        "💅 Gel Manicure - $35",
-        "✨ Nail Art Add-on - $15",
-        "💖 Full Set Acrylic - $50"
-    ]
+    @State private var services: [String] = []
+    @State private var selectedService = ""
 
-    @State private var selectedService = "💅 Gel Manicure - $35"
     @State private var selectedDate = Date()
     @State private var selectedTime: String? = nil
-    @State private var goToConfirm = false
-    @State private var goBackHome = false
+    @State private var showConfirmation = false
     @State private var isSaving = false
     @State private var errorMessage: String? = nil
 
@@ -48,21 +49,29 @@ struct BookingAppointmentView: View {
                         .foregroundStyle(.secondary)
                 }
 
-                // Service
+                // Services
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Select Service")
                         .font(.headline)
                         .foregroundStyle(.pink)
 
-                    Picker("Select Service", selection: $selectedService) {
-                        ForEach(services, id: \.self) { service in
-                            Text(service).tag(service)
+                    if services.isEmpty {
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color(.systemGray6))
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                    } else {
+                        Picker("Select Service", selection: $selectedService) {
+                            ForEach(services, id: \.self) { service in
+                                Text(service).tag(service)
+                            }
                         }
+                        .pickerStyle(.menu)
+                        .padding()
+                        .background(Color(.systemGray6))
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
                     }
-                    .pickerStyle(.menu)
-                    .padding()
-                    .background(Color(.systemGray6))
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
                 }
 
                 // Date
@@ -83,13 +92,16 @@ struct BookingAppointmentView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 14))
                 }
 
-                // Time slots
+                // Time
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Select Time")
                         .font(.headline)
                         .foregroundStyle(.pink)
 
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 110), spacing: 10)], spacing: 10) {
+                    LazyVGrid(
+                        columns: [GridItem(.adaptive(minimum: 110), spacing: 10)],
+                        spacing: 10
+                    ) {
                         ForEach(slots, id: \.self) { slot in
                             Button {
                                 selectedTime = slot
@@ -97,12 +109,18 @@ struct BookingAppointmentView: View {
                                 Text(slot)
                                     .font(.subheadline)
                                     .bold()
-                                    .foregroundStyle(selectedTime == slot ? .white : .primary)
+                                    .foregroundStyle(
+                                        selectedTime == slot ? .white : .primary
+                                    )
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 12)
                                     .background(
                                         RoundedRectangle(cornerRadius: 14)
-                                            .fill(selectedTime == slot ? Color.pink : Color(.systemGray6))
+                                            .fill(
+                                                selectedTime == slot
+                                                ? Color.pink
+                                                : Color(.systemGray6)
+                                            )
                                     )
                             }
                             .buttonStyle(.plain)
@@ -121,8 +139,9 @@ struct BookingAppointmentView: View {
                     saveBooking()
                 } label: {
                     ZStack {
-                        PrimaryButton(title: isSaving ? "Saving..." : "Confirm Booking")
-                            .opacity(isSaving ? 0.75 : 1.0)
+                        PrimaryButton(
+                            title: isSaving ? "Saving..." : "Confirm Booking"
+                        )
 
                         if isSaving {
                             ProgressView()
@@ -130,8 +149,16 @@ struct BookingAppointmentView: View {
                         }
                     }
                 }
-                .disabled(selectedTime == nil || isSaving)
-                .opacity((selectedTime == nil || isSaving) ? 0.6 : 1.0)
+                .disabled(
+                    selectedTime == nil ||
+                    selectedService.isEmpty ||
+                    isSaving
+                )
+                .opacity(
+                    (selectedTime == nil ||
+                     selectedService.isEmpty ||
+                     isSaving) ? 0.6 : 1.0
+                )
 
                 Spacer(minLength: 12)
             }
@@ -140,7 +167,12 @@ struct BookingAppointmentView: View {
         .navigationBarBackButtonHidden(true)
         .navigationBarHidden(true)
         .background(Color(red: 1.0, green: 0.97, blue: 0.99))
-        .navigationDestination(isPresented: $goToConfirm) {
+        .onAppear {
+            fetchServices()
+        }
+
+        // REAL PAGE (not sheet)
+        .navigationDestination(isPresented: $showConfirmation) {
             BookingConfirmationView(
                 service: selectedService,
                 date: selectedDate,
@@ -149,11 +181,56 @@ struct BookingAppointmentView: View {
         }
     }
 
+    private func fetchServices() {
+        Firestore.firestore()
+            .collection("proServices")
+            .whereField("proUserID", isEqualTo: proUserID)
+            .getDocuments { snapshot, error in
+
+                if let error = error {
+                    print(error.localizedDescription)
+                    return
+                }
+
+                let docs = snapshot?.documents ?? []
+
+                let loaded = docs.compactMap { doc -> String? in
+                    let data = doc.data()
+
+                    let name =
+                        data["name"] as? String ??
+                        data["serviceName"] as? String ??
+                        "Service"
+
+                    let priceText: String
+
+                    if let d = data["price"] as? Double {
+                        priceText = "$\(Int(d))"
+                    } else if let i = data["price"] as? Int {
+                        priceText = "$\(i)"
+                    } else if let s = data["price"] as? String {
+                        priceText = "$\(s)"
+                    } else {
+                        priceText = ""
+                    }
+
+                    return priceText.isEmpty ? name : "\(name) - \(priceText)"
+                }
+
+                DispatchQueue.main.async {
+                    services = loaded
+                    if selectedService.isEmpty {
+                        selectedService = loaded.first ?? ""
+                    }
+                }
+            }
+    }
+
     private func saveBooking() {
         guard !isSaving else { return }
 
         guard let clientID = Auth.auth().currentUser?.uid else {
-            errorMessage = "You must be signed in to make a booking."
+            errorMessage = "You must be signed in."
             return
         }
 
@@ -170,22 +247,20 @@ struct BookingAppointmentView: View {
         db.collection("users").document(clientID).getDocument { snapshot, error in
             if let error = error {
                 isSaving = false
-                errorMessage = "Failed to load your profile: \(error.localizedDescription)"
+                errorMessage = error.localizedDescription
                 return
             }
 
             let data = snapshot?.data() ?? [:]
+
             let rawName = (data["fullName"] as? String ?? "")
                 .trimmingCharacters(in: .whitespacesAndNewlines)
 
             let clientName = rawName.isEmpty ? "Client" : rawName
 
-            let clientEmail = data["email"] as? String ?? (Auth.auth().currentUser?.email ?? "")
-
             let bookingData: [String: Any] = [
                 "clientID": clientID,
                 "clientName": clientName,
-                "clientEmail": clientEmail,
                 "proUserID": proUserID,
                 "proName": proName,
                 "service": selectedService,
@@ -200,87 +275,11 @@ struct BookingAppointmentView: View {
                 isSaving = false
 
                 if let error = error {
-                    errorMessage = "Failed to save booking: \(error.localizedDescription)"
-                    return
+                    errorMessage = error.localizedDescription
+                } else {
+                    showConfirmation = true
                 }
-
-                goToConfirm = true
             }
         }
     }
 }
-
-//struct BookingConfirmationViewSwiftUI: View {
-//    @Environment(\.dismiss) private var dismiss
-//
-//    let service: String
-//    let date: Date
-//    let time: String
-//
-//    private var dateText: String {
-//        let f = DateFormatter()
-//        f.dateStyle = .medium
-//        return f.string(from: date)
-//    }
-//
-//    var body: some View {
-//        VStack(spacing: 20) {
-//            HStack {
-//                BackPillButton {
-//                    dismiss()
-//                }
-//                Spacer()
-//            }
-//
-//            Spacer().frame(height: 10)
-//
-//            Image(systemName: "checkmark.circle.fill")
-//                .font(.system(size: 72))
-//                .foregroundStyle(.pink)
-//
-//            Text("Booking Confirmed!")
-//                .font(.title2)
-//                .bold()
-//
-//            Text("Your Glam Session Awaits ✨")
-//                .font(.subheadline)
-//                .foregroundStyle(.secondary)
-//
-//            VStack(alignment: .leading, spacing: 14) {
-//                confirmationRow(title: "Service", value: service)
-//                confirmationRow(title: "Date", value: dateText)
-//                confirmationRow(title: "Time", value: time)
-//                confirmationRow(title: "Status", value: "Pending Approval")
-//            }
-//            .padding(18)
-//            .background(Color(.systemGray6))
-//            .clipShape(RoundedRectangle(cornerRadius: 18))
-//
-//            Spacer()
-//
-//            Button {
-//                dismiss()
-//            } label: {
-//                PrimaryButton(title: "BACK")
-//            }
-//        }
-//        .padding(20)
-//        .navigationBarBackButtonHidden(true)
-//        .navigationBarHidden(true)
-//        .background(Color(red: 1.0, green: 0.97, blue: 0.99))
-//    }
-//
-//    @ViewBuilder
-//    private func confirmationRow(title: String, value: String) -> some View {
-//        HStack {
-//            Text(title)
-//                .fontWeight(.semibold)
-//                .foregroundStyle(.pink)
-//
-//            Spacer()
-//
-//            Text(value)
-//                .multilineTextAlignment(.trailing)
-//        }
-//    }
-//}

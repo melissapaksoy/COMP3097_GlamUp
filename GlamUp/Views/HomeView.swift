@@ -2,10 +2,12 @@
 // Kashfi - Added Search and Filter
 // Melissa - Connected client home to Firestore, fetches real pros with live ratings, fixed pros not showing.
 // Kashfi - Beauty pro cards show starting price + price filter works
+// Updated: Logout works even on newly created HomeView routes
 
 import SwiftUI
 import MapKit
 import FirebaseFirestore
+import FirebaseAuth
 
 struct HomeView: View {
     @EnvironmentObject private var authVM: AuthViewModel
@@ -45,7 +47,9 @@ struct HomeView: View {
     private var filteredProfessionals: [Professional] {
         var result = professionals
 
-        let trimmed = searchText.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmed = searchText
+            .lowercased()
+            .trimmingCharacters(in: .whitespacesAndNewlines)
 
         if !trimmed.isEmpty {
             result = result.filter {
@@ -93,8 +97,11 @@ struct HomeView: View {
                         Image(systemName: "magnifyingglass")
                             .foregroundStyle(.secondary)
 
-                        TextField("Search services or professionals...", text: $searchText)
-                            .font(.subheadline)
+                        TextField(
+                            "Search services or professionals...",
+                            text: $searchText
+                        )
+                        .font(.subheadline)
                     }
                     .padding(.vertical, 12)
                     .padding(.horizontal, 14)
@@ -105,6 +112,7 @@ struct HomeView: View {
 
                     // Filters
                     HStack(spacing: 10) {
+
                         Menu {
                             ForEach(priceOptions, id: \.self) { option in
                                 Button(option) {
@@ -167,8 +175,12 @@ struct HomeView: View {
                                 .font(.system(size: 36))
                                 .foregroundStyle(.pink.opacity(0.4))
 
-                            Text(professionals.isEmpty ? "No professionals yet" : "No results found")
-                                .foregroundStyle(.secondary)
+                            Text(
+                                professionals.isEmpty
+                                ? "No professionals yet"
+                                : "No results found"
+                            )
+                            .foregroundStyle(.secondary)
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 40)
@@ -199,7 +211,11 @@ struct HomeView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Logout") {
-                    authVM.signOut()
+                    do {
+                        try Auth.auth().signOut()
+                    } catch {
+                        print("Logout failed: \(error.localizedDescription)")
+                    }
                 }
                 .foregroundStyle(.pink)
             }
@@ -228,7 +244,6 @@ struct HomeView: View {
 
                 let docs = snapshot?.documents ?? []
                 let group = DispatchGroup()
-
                 var loaded: [Professional] = []
 
                 for doc in docs {
@@ -248,18 +263,19 @@ struct HomeView: View {
                         .whereField("proUserID", isEqualTo: proID)
                         .getDocuments { serviceSnap, _ in
 
-                            let prices: [Double] = (serviceSnap?.documents ?? []).compactMap { sdoc in
-                                let val = sdoc.data()["price"]
+                            let prices: [Double] =
+                                (serviceSnap?.documents ?? []).compactMap { sdoc in
+                                    let val = sdoc.data()["price"]
 
-                                if let d = val as? Double { return d }
-                                if let i = val as? Int { return Double(i) }
-                                if let s = val as? String {
-                                    let clean = s.replacingOccurrences(of: "$", with: "")
-                                    return Double(clean)
+                                    if let d = val as? Double { return d }
+                                    if let i = val as? Int { return Double(i) }
+                                    if let s = val as? String {
+                                        let clean = s.replacingOccurrences(of: "$", with: "")
+                                        return Double(clean)
+                                    }
+
+                                    return nil
                                 }
-
-                                return nil
-                            }
 
                             let startPrice = prices.min() ?? 0
 
@@ -285,6 +301,7 @@ struct HomeView: View {
                 }
             }
     }
+
     private func fetchRatings() {
         let db = Firestore.firestore()
 
