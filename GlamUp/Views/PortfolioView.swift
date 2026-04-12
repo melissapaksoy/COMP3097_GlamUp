@@ -33,12 +33,13 @@ struct PortfolioView: View {
                             if let data = Data(base64Encoded: base64),
                                let img = UIImage(data: data) {
                                 ZStack(alignment: .topTrailing) {
-                                    Image(uiImage: img)
-                                        .resizable()
-                                        .scaledToFill()
-                                        .frame(minWidth: 0, maxWidth: .infinity)
-                                        .aspectRatio(1, contentMode: .fill)
-                                        .clipped()
+                                    Color.clear
+                                        .aspectRatio(1, contentMode: .fit)
+                                        .overlay(
+                                            Image(uiImage: img)
+                                                .resizable()
+                                                .scaledToFill()
+                                        )
                                         .clipShape(RoundedRectangle(cornerRadius: 10))
 
                                     Button { deleteImage(at: index) } label: {
