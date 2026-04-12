@@ -192,25 +192,23 @@ private struct BookingCard: View {
         .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 3)
     }
 
-    @ViewBuilder
     private var statusBadge: some View {
-        let color: Color
-        let label: String
-        if booking.status == "approved" {
-            color = .green; label = "Accepted"
-        } else if booking.status == "declined" {
-            color = .red; label = "Declined"
-        } else {
-            color = .orange; label = "Pending"
-        }
+        let config: (Color, String) = {
+            if booking.status == "approved" {
+                return (.green, "Accepted")
+            } else if booking.status == "declined" {
+                return (.red, "Declined")
+            } else {
+                return (.orange, "Pending")
+            }
+        }()
 
-        Text(label)
-            .font(.caption)
-            .fontWeight(.semibold)
-            .foregroundStyle(color)
+        return Text(config.1)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(config.0)
             .padding(.horizontal, 10)
-            .padding(.vertical, 4)
-            .background(color.opacity(0.12))
+            .padding(.vertical, 6)
+            .background(config.0.opacity(0.12))
             .clipShape(Capsule())
     }
 }
