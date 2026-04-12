@@ -1,4 +1,5 @@
 // Melissa - Created centralized auth service with signIn, register, signOut, and role fetching from Firestore.
+// Meric — Admin metrics: Firestore listeners/fetches for registered users count and active bookings count.
 
 import Foundation
 import FirebaseAuth
@@ -122,6 +123,64 @@ final class AuthService {
             }
             let count = snapshot.documents.count
             print("[GlamUp/AdminStats] listener ✓ count=\(count) fromCache=\(snapshot.metadata.isFromCache) hasPendingWrites=\(snapshot.metadata.hasPendingWrites)")
+            DispatchQueue.main.async {
+                onUpdate(.success(count))
+            }
+        }
+    }
+
+    // MARK: - Bookings (admin)
+
+    /// Same collection as `BookingView.saveBooking()` → `bookings` documents.
+    private let bookingsCollectionPath = "bookings"
+    /// `BookingView` creates `status: "pending"`; pros set `approved` or `declined` (`BeautyProDashboardView`).
+    private var activeBookingsQuery: Query {
+        db.collection(bookingsCollectionPath)
+            .whereField("status", in: ["pending", "approved"])
+    }
+
+    /// Count of bookings that are still in play (not declined / not removed).
+    func fetchActiveBookingsCount() async throws -> Int {
+        print("[GlamUp/AdminStats] fetchActiveBookingsCount → collection(\"\(bookingsCollectionPath)\").whereField(status, in: [pending, approved]).getDocuments()")
+        do {
+            let snapshot = try await activeBookingsQuery.getDocuments()
+            let count = snapshot.documents.count
+            print("[GlamUp/AdminStats] fetchActiveBookingsCount ✓ count=\(count) fromCache=\(snapshot.metadata.isFromCache)")
+            return count
+        } catch {
+            let ns = error as NSError
+            print("[GlamUp/AdminStats] fetchActiveBookingsCount ✗ error=\(error.localizedDescription) domain=\(ns.domain) code=\(ns.code)")
+            throw error
+        }
+    }
+
+    @discardableResult
+    func observeActiveBookingsCount(
+        onUpdate: @escaping (Result<Int, Error>) -> Void
+    ) -> ListenerRegistration {
+        print("[GlamUp/AdminStats] observeActiveBookingsCount → snapshot listener on active bookings query")
+        return activeBookingsQuery.addSnapshotListener { snapshot, error in
+            if let error {
+                let ns = error as NSError
+                print("[GlamUp/AdminStats] bookings listener ✗ error=\(error.localizedDescription) domain=\(ns.domain) code=\(ns.code)")
+                DispatchQueue.main.async {
+                    onUpdate(.failure(error))
+                }
+                return
+            }
+            guard let snapshot else {
+                print("[GlamUp/AdminStats] bookings listener ✗ nil snapshot")
+                DispatchQueue.main.async {
+                    onUpdate(.failure(NSError(
+                        domain: "GlamUp.AdminStats",
+                        code: -1,
+                        userInfo: [NSLocalizedDescriptionKey: "Firestore returned nil snapshot"]
+                    )))
+                }
+                return
+            }
+            let count = snapshot.documents.count
+            print("[GlamUp/AdminStats] bookings listener ✓ count=\(count) fromCache=\(snapshot.metadata.isFromCache)")
             DispatchQueue.main.async {
                 onUpdate(.success(count))
             }

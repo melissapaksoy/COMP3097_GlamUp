@@ -1,6 +1,29 @@
 // UIComponents.swift — built by Kashfi
+// Meric — AuthScreenChrome + GlamUpAuthLogo (shared login/register hero layout)
 
 import SwiftUI
+
+// MARK: - Auth screens (Login / Register) — single source of truth
+
+enum AuthScreenChrome {
+    static let horizontalPadding: CGFloat = 20
+    static let verticalPadding: CGFloat = 20
+    static let stackSpacing: CGFloat = 16
+    static let titleTopPadding: CGFloat = 44
+    static let logoMaxHeight: CGFloat = 500
+}
+
+/// GlamUp logo hero — use on Login and Register only via this type so size, width, and alignment stay identical.
+struct GlamUpAuthLogo: View {
+    var body: some View {
+        Image("2")
+            .resizable()
+            .scaledToFit()
+            .frame(maxWidth: .infinity)
+            .frame(maxHeight: AuthScreenChrome.logoMaxHeight)
+            .accessibilityLabel("GlamUp logo")
+    }
+}
 
 struct PrimaryButton: View {
     let title: String
