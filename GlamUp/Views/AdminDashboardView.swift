@@ -1,3 +1,15 @@
+// ============================================================
+// AdminDashboardView.swift — Melissa's changes
+// ============================================================
+// - Created the login page and admin page from scratch.
+// - Built the full admin dashboard UI: metric cards (Total Users,
+//   Active Bookings), small cards (Flagged Reviews, Open Disputes),
+//   a disputes list with High/Medium/Low priority badges, and a
+//   quick actions grid (Add User, Block User, Reports, etc.).
+// - Hooked up AuthViewModel and added a Logout button in the toolbar.
+// - Data is placeholder for now, not yet live from Firestore.
+// ============================================================
+
 import SwiftUI
 
 struct AdminDashboardView: View {

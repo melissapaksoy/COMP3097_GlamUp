@@ -1,3 +1,23 @@
+// ============================================================
+// BeautyProfileView.swift — Melissa's changes
+// ============================================================
+// - Created the client-facing beauty pro profile page from scratch.
+// - Shows a header card with the pro's name, role, profile photo,
+//   and average star rating — all fetched live from Firestore.
+// - Displays bio, services & prices, weekly availability, and
+//   portfolio photos, each from their own Firestore collection.
+// - Book Appointment button navigates to BookingAppointmentView.
+// - Ratings & Reviews button navigates to RatingsReviewsView.
+// - Connected portfolio to "portfolios" Firestore collection
+//   (was dummy data before).
+// - Updated fetch calls to read from "beautyProfessionals" collection.
+// - Fixed the portfolio grid — images were stretching full-width
+//   instead of fitting as squares in a 3-column grid.
+// - Made portfolio photos tappable: tap any photo to open it
+//   full-screen on a black background with an X to close.
+// - Added IdentifiableImage helper struct for the fullScreenCover.
+// ============================================================
+
 import SwiftUI
 import FirebaseFirestore
 
@@ -28,6 +48,7 @@ struct BeautyProfileView: View {
     // Portfolio
     @State private var portfolioImages: [String] = []
     @State private var isLoadingPortfolio = false
+    @State private var expandedImage: UIImage? = nil
 
     // Booking
     @State private var canNavigateToBooking = false
@@ -158,16 +179,20 @@ struct BeautyProfileView: View {
                         .foregroundStyle(.secondary)
                         .italic()
                 } else {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
                         ForEach(Array(portfolioImages.enumerated()), id: \.offset) { _, base64 in
                             if let data = Data(base64Encoded: base64),
                                let img = UIImage(data: data) {
-                                Image(uiImage: img)
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(height: 100)
-                                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                                    .clipped()
+                                Button { expandedImage = img } label: {
+                                    Image(uiImage: img)
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(minWidth: 0, maxWidth: .infinity)
+                                        .aspectRatio(1, contentMode: .fill)
+                                        .clipped()
+                                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                                }
+                                .buttonStyle(.plain)
                             }
                         }
                     }
@@ -206,6 +231,25 @@ struct BeautyProfileView: View {
         }
         .navigationBarHidden(true)
         .background(Color(red: 1.0, green: 0.97, blue: 0.99))
+        .fullScreenCover(item: Binding(
+            get: { expandedImage.map { IdentifiableImage(image: $0) } },
+            set: { if $0 == nil { expandedImage = nil } }
+        )) { wrapper in
+            ZStack(alignment: .topTrailing) {
+                Color.black.ignoresSafeArea()
+                Image(uiImage: wrapper.image)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                Button { expandedImage = nil } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 30))
+                        .foregroundStyle(.white)
+                        .shadow(color: .black.opacity(0.5), radius: 4)
+                }
+                .padding()
+            }
+        }
         .navigationDestination(isPresented: $goToBooking) {
             BookingAppointmentView(proName: proName, proUserID: proUserID, isBeautyPro: false)
         }
@@ -313,6 +357,11 @@ private func ServiceRow(_ s: ProService) -> some View {
 
 private func SectionHeader(_ text: String) -> some View {
     Text(text).font(.headline).foregroundStyle(.pink)
+}
+
+private struct IdentifiableImage: Identifiable {
+    let id = UUID()
+    let image: UIImage
 }
 
 #Preview {

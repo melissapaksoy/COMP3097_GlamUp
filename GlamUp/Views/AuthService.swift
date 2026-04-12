@@ -1,3 +1,15 @@
+// ============================================================
+// AuthService.swift — Melissa's changes
+// ============================================================
+// - Created this file as a centralized auth singleton (AuthService.shared).
+// - Defined AppUserRole (admin, beautyPro, client) and AppUser model.
+// - signIn() signs in with Firebase and fetches the user's role
+//   from Firestore — defaults to .client if nothing is found.
+// - register() creates the Firebase Auth account and stores the
+//   role + email in "users/{uid}" in Firestore.
+// - signOut() and a private fetchRole() helper included.
+// ============================================================
+
 import Foundation
 import FirebaseAuth
 import FirebaseFirestore

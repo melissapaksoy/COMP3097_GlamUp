@@ -1,3 +1,5 @@
+// BookingConfirmationView.swift — built by Kashfi
+
 import SwiftUI
 
 struct BookingConfirmationView: View {
