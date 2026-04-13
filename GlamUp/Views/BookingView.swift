@@ -327,14 +327,14 @@ struct BookingAppointmentView: View {
                     } else if let d = data["price"] as? Double {
                         priceText = "\(Int(d))"
                     } else if let s = data["price"] as? String {
-                        priceText = s
+                        priceText = s.hasPrefix("$") ? s : "$\(s)"
                     } else {
                         priceText = ""
                     }
 
                     return priceText.isEmpty
                         ? name
-                        : "\(name) - $\(priceText)"
+                        : "\(name) - \(priceText)"
                 }
 
                 services = loaded
