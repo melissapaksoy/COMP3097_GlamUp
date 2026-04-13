@@ -209,6 +209,14 @@ struct HomeView: View {
         }
         .navigationTitle("Explore")
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                NavigationLink {
+                    ManageBookingsView(isBeautyPro: false)
+                } label: {
+                    Label("My Bookings", systemImage: "calendar")
+                        .foregroundStyle(.pink)
+                }
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Logout") {
                     do {

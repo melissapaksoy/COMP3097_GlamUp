@@ -99,6 +99,13 @@ struct BeautyProDashboardView: View {
                         QuickActionCardContent(title: "Ratings & Reviews", systemImage: "star.bubble")
                     }
                     .buttonStyle(.plain)
+
+                    NavigationLink {
+                        ManageBookingsView(isBeautyPro: true)
+                    } label: {
+                        QuickActionCardContent(title: "Manage Bookings", systemImage: "calendar.badge.checkmark")
+                    }
+                    .buttonStyle(.plain)
                 }
 
                 // MARK: New Requests

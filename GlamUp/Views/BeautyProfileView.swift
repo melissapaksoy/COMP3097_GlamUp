@@ -130,7 +130,7 @@ struct BeautyProfileView: View {
 
                                 Spacer()
 
-                                Text("$\(s.price)")
+                                Text(s.price)
                                     .fontWeight(.semibold)
                                     .foregroundStyle(.pink)
                             }
